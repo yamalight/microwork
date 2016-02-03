@@ -23,6 +23,7 @@ Since Microwork.js is written in ES6, it uses [babel](https://babeljs.io/) to co
 
 * Simple interface for building distributed (micro)services
 * Easy way to scale services both horizontally (by adding more nodes) and vertically (by adding more subscribers)
+* Extensible with plugins
 
 # Usage
 
@@ -75,7 +76,35 @@ await runner.subscribe('do.work', (msg, reply) => {
 });
 ```
 
-You can do achieve the same result by instantiating two different services (e.g. on different servers) and subscribing to the same exchange and topic from them. 
+You can do achieve the same result by instantiating two different services (e.g. on different servers) and subscribing to the same exchange and topic from them.
+
+## Plugins
+
+Microwork provides basic support for plugins.
+Following plugins are currently available:
+
+### Hardware stats plugin
+
+Provides basic hardware stats about node (currently includes cpu with average load and memory information).
+
+Example usage:
+```js
+import HardwareStat from 'microwork/lib/plugins/hardwarestat';
+
+// create service
+const service = new Microwork({host: 'docker.dev', exchange});
+// register plugin
+service.registerPlugin(HardwareStat);
+// start autoreport
+service.autoreportHardwareStats();
+```
+
+To listen to the stats you need to tap into `microwok.node.status` topic, like so:
+```js
+await service.subscribe('microwok.node.status', (stats) => {
+    console.log(stats); // <- stats object
+});
+```
 
 ## License
 

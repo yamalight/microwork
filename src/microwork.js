@@ -55,6 +55,27 @@ export class Microwork {
     }
 
     /**
+     * Register new Microwork plugin
+     * @param  {Object} plugin      Microwork plugin object
+     * @return {void}
+     * @example
+     * import myMicroworkPlugin from 'my-microwork-plugin';
+     * microworkInstance.registerPlugin(myMicroworkPlugin);
+     */
+    registerPlugin(plugin) {
+        for (const prop in plugin) {
+            // only apply non-existent properties
+            if (!this.hasOwnProperty(prop)) {
+                /**
+                 * New property from plugin
+                 * @private
+                 */
+                this[prop] = plugin[prop];
+            }
+        }
+    }
+
+    /**
      * Initializes connection to RabbitMQ
      * @return {Promise} Returns promise that can be awaited to ensure connection
      * @private
@@ -123,17 +144,18 @@ export class Microwork {
      * Send given data to the specified topic
      * @param  {string} topic Topic to send data to
      * @param  {Any}    data  Data to send
+     * @param  {Object} opts  Publish options for RabbitMQ
      * @return {Promise}      Returns promise that can be awaited to ensure termination
      * @example
      * await microworkInstance.send('test.topic', 'test');
      * await microworkInstance.send('test.topic', {json: 'works too'});
      */
-    async send(topic, data) {
+    async send(topic, data, opts = {}) {
         // wait for connection
         await this.connect();
         // send
         logger.debug('sending to', topic, 'data:', data);
-        this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)));
+        this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)), opts);
     }
 
     /**
