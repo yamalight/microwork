@@ -1,6 +1,6 @@
 import test from 'tape';
-import Microwork from '../src';
-import HardwareStat from '../src/plugins/hardwarestat';
+import Microwork from '../../src';
+import HardwareStat from '../../src/plugins/hardwarestat';
 
 test('HardwareStat', it => {
     it.test('  -> should report every 500ms', async (t) => {

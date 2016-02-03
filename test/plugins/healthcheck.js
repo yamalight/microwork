@@ -1,6 +1,6 @@
 import test from 'tape';
-import Microwork from '../src';
-import HealthCheck from '../src/plugins/healthcheck';
+import Microwork from '../../src';
+import HealthCheck from '../../src/plugins/healthcheck';
 
 test('HealthCheck', it => {
     it.test('  -> should report every 500ms', async (t) => {

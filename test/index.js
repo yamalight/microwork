@@ -1,4 +1,4 @@
 import './microwork';
-import './healthcheck';
-import './hardwarestat';
+import './plugins/healthcheck';
+import './plugins/hardwarestat';
 import './sleep';
