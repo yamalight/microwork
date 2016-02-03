@@ -3,3 +3,4 @@ node_js:
   - "stable"
 services:
   - rabbitmq
+after_success: 'npm run coveralls'
