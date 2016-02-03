@@ -156,7 +156,7 @@ export class Microwork {
      * await microworkInstance.send('test.topic', 'test');
      * await microworkInstance.send('test.topic', {json: 'works too'});
      */
-    async send(topic, data, opts = {}) {
+    async send(topic, data = '', opts = {}) {
         // wait for connection
         await this.connect();
         // send

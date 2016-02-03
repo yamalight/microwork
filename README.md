@@ -129,6 +129,32 @@ await service.subscribe('microwork.node.alive', (id) => {
 });
 ```
 
+### Subscribers info plugin
+
+Provides basic info about subscribers from node.
+
+Example usage:
+```js
+import SubscriberStats from 'microwork/lib/plugins/substats';
+
+// create service
+const service = new Microwork({host: 'docker.dev', exchange});
+// register plugin
+service.registerPlugin(SubscriberStats);
+// init subs reporting
+service.initSubscribersReporting();
+```
+
+To retrieve the subscribers you need to tap into `microwork.node.subscribers` topic and then send an empty message to `microwork.node.report.subscribers` topic, like so:
+```js
+await service.subscribe('microwork.node.subscribers', (info) => {
+    console.log(info); // <- node info including ID and array of subscribed topics
+});
+
+await service.send('microwork.node.report.subscribers');
+```
+
+
 ## License
 
 [MIT](http://www.opensource.org/licenses/mit-license)
