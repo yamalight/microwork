@@ -9,6 +9,7 @@
     "prepublish": "babel -d lib src/",
     "start-rabbit": "docker run -d -p 5672:5672 -p 8081:15672 --name microwork-rabbit rabbitmq:management",
     "stop-rabbit": "docker stop microwork-rabbit",
+    "docs": "esdoc -c esdoc.json",
     "test": "NODE_ENV=test tape -r babel-core/register test/**/*.js | tap-spec"
   },
   "author": "Tim Ermilov <yamalight@gmail.com> (http://codezen.net)",
@@ -32,7 +33,6 @@
   ],
   "dependencies": {
     "amqplib": "^0.4.0",
-    "node-uuid": "^1.4.7",
     "winston": "^2.1.1"
   },
   "devDependencies": {
@@ -41,6 +41,8 @@
     "babel-preset-es2015-node": "^5.0.2",
     "babel-preset-stage-1": "^6.3.13",
     "coveralls": "^2.11.6",
+    "esdoc": "^0.4.3",
+    "esdoc-es7-plugin": "0.0.3",
     "istanbul": "^1.0.0-alpha.2",
     "tap-spec": "^4.1.1",
     "tape": "^4.4.0"

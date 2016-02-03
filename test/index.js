@@ -19,7 +19,7 @@ test('Microwork', it => {
         };
 
         // add worker
-        await runner.addWorker(topic, consumer);
+        await runner.subscribe(topic, consumer);
         // send message
         await master.send(topic, message);
     });
@@ -43,10 +43,10 @@ test('Microwork', it => {
             await master.stop();
             await runner.stop();
             t.end();
-        });
+        }, {durable: true, exclusive: true});
 
         // add worker
-        await runner.addWorker(topic, consumer);
+        await runner.subscribe(topic, consumer);
         // send message
         await master.send(topic, message);
     });
@@ -83,12 +83,12 @@ test('Microwork', it => {
                 await runnerTwo.stop();
                 await runnerThree.stop();
             }
-        });
+        }, {durable: true, exclusive: true});
 
         // add worker
-        await runner.addWorker(topic, consumer.bind(null, 0));
-        await runnerTwo.addWorker(topic, consumer.bind(null, 1));
-        await runnerThree.addWorker(topic, consumer.bind(null, 2));
+        await runner.subscribe(topic, consumer.bind(null, 0));
+        await runnerTwo.subscribe(topic, consumer.bind(null, 1));
+        await runnerThree.subscribe(topic, consumer.bind(null, 2));
         // send message
         await master.send(topic, messages[0]);
         await master.send(topic, messages[1]);

@@ -1,23 +1,68 @@
 import amqp from 'amqplib';
-import uuid from 'node-uuid';
 import sleep from './sleep';
 import logger from './logger';
 
+/**
+ * Core Microwork class that provides a way to create new microservice
+ */
 export class Microwork {
+    /**
+     * Microwork class construct
+     * @param  {object} opts            Microwork instance options
+     * @param  {string} opts.host       RabbitMQ host to use
+     * @param  {string} opts.exchange   RabbitMQ exchange to use
+     * @return {void}
+     * @example
+     * const service = new Microwork({host: 'localhost', exchange: 'test.exchange'});
+     */
     constructor({host = 'localhost', exchange = 'microwork.default.exchange'}) {
         logger.debug('construct with', host, exchange);
+        /**
+         * RabbitMQ host address
+         * @type {string}
+         */
         this.host = host;
+        /**
+         * RabbitMQ exchange name
+         * @type {string}
+         */
         this.exchange = exchange;
+        /**
+         * Active route handlers and queues
+         * @type {Object}
+         */
         this.routeHandlers = {};
+        /**
+         * Connecting indicator
+         * @type {Boolean}
+         * @private
+         */
         this.connecting = false;
+        /**
+         * Connection to RabbitMQ instance
+         * @type {Object}
+         * @private
+         */
+        this.connection = undefined;
+        /**
+         * Connection to RabbitMQ instance
+         * @type {Object}
+         * @private
+         */
+        this.channel = undefined;
         // init connection
-        this.listen();
+        this.connect();
     }
 
-    async listen() {
+    /**
+     * Initializes connection to RabbitMQ
+     * @return {Promise} Returns promise that can be awaited to ensure connection
+     * @private
+     */
+    async connect() {
         // if connecting, wait a bit, then return self
         if (this.connecting) {
-            return sleep(50).then(() => this.listen());
+            return sleep(50).then(() => this.connect());
         }
         // do not do anything if already connected
         if (this.connection) {
@@ -43,70 +88,72 @@ export class Microwork {
         this.connecting = false;
     }
 
-    async removeSubscription(topic) {
+    /**
+     * Removes existing subscription or worker
+     * @param  {string} topic Topic to remove subscription/worker from
+     * @return {Promise} Returns promise that can be awaited to ensure removal
+     * @example
+     * await microworkInstance.unsubscribe('test.topic');
+     */
+    async unsubscribe(topic) {
         await this.channel.unbindQueue(this.routeHandlers[topic].queue, this.exchange, topic);
         await this.channel.deleteQueue(this.routeHandlers[topic].queue);
         await this.channel.cancel(this.routeHandlers[topic].consumerTag);
     }
 
+    /**
+     * Stops the service, closes all workers/subscriptions and terminates the connection to RabbitMQ
+     * @return {Promise} Returns promise that can be awaited to ensure termination
+     * @example
+     * await microworkInstance.stop();
+     */
     async stop() {
         // cleanup queues and routes if any are present
         const paths = Object.keys(this.routeHandlers);
         if (paths.length) {
-            await Promise.all(paths.map(path => this.removeSubscription(path)));
+            await Promise.all(paths.map(path => this.unsubscribe(path)));
         }
         // close channel & connection
         await this.channel.close();
         await this.connection.close();
     }
 
-    async subscribe(topic, handler) {
-        // wait for connection
-        await this.listen();
-        // generate id
-        const id = uuid.v4();
-        const {queue} = await this.channel.assertQueue(`microwork-reply-${id}-queue`, {
-            exclusive: true,
-            durable: true,
-        });
-        logger.debug('inited queue for', topic);
-        // bind to key
-        await this.channel.bindQueue(queue, this.exchange, topic);
-        logger.debug('bound queue for', topic);
-        // listen for messages
-        const {consumerTag} = await this.channel.consume(queue, (data) => {
-            if (!data) {
-                return;
-            }
-            const msg = JSON.parse(data.content.toString());
-            logger.debug('got message:', msg);
-            // acknowledge
-            this.channel.ack(data);
-            // return depending on type
-            handler(msg);
-        }, {noAck: false});
-        // push to cleanup
-        this.routeHandlers[topic] = {
-            queue,
-            consumerTag,
-        };
-        logger.info('master subscribtion inited, consuming...');
-    }
-
+    /**
+     * Send given data to the specified topic
+     * @param  {string} topic Topic to send data to
+     * @param  {Any}    data  Data to send
+     * @return {Promise}      Returns promise that can be awaited to ensure termination
+     * @example
+     * await microworkInstance.send('test.topic', 'test');
+     * await microworkInstance.send('test.topic', {json: 'works too'});
+     */
     async send(topic, data) {
         // wait for connection
-        await this.listen();
+        await this.connect();
         // send
         logger.debug('sending to', topic, 'data:', data);
         this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)));
     }
 
-    async addWorker(topic, handler) {
+    /**
+     * Create subscription to given topic that will pass all incoming messages to given handler
+     * @param  {string}   topic        Topic to subscribe to
+     * @param  {Function} handler      Handler function that will get all incoming messages
+     * @param  {Object}   queueConfig  Queue config to pass to RabbitMQ
+     * @return {Promise}               Returns promise that can be awaited to ensure termination
+     * @example
+     * await microworkInstance.subscribe('test.topic', (msg, reply) => {
+     * 	if (msg === 'ping') {
+     * 		reply('test.reply', 'pong');
+     * 	}
+     * }, {durable: true, exclusive: true});
+     */
+    async subscribe(topic, handler, queueConfig = {durable: true}) {
         // wait for connection
-        await this.listen();
+        await this.connect();
         // get queue
         logger.debug('adding worker for:', topic);
-        const {queue} = await this.channel.assertQueue(`microwork-${topic}-queue`, {durable: true});
+        const {queue} = await this.channel.assertQueue(`microwork-${topic}-queue`, queueConfig);
         await this.channel.bindQueue(queue, this.exchange, topic);
         logger.debug('bound queue...');
         // consume if needed
