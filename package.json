@@ -1,7 +1,7 @@
 {
   "name": "microwork",
   "version": "0.4.0",
-  "description": "Microwork - simple distributed task runners in node.js with RabbitMQ",
+  "description": "Microwork - simple creation of distributed scalable microservices in node.js with RabbitMQ",
   "main": "lib/index.js",
   "scripts": {
     "cover": "babel-node ./node_modules/istanbul/lib/cli cover ./node_modules/tape/bin/tape ./test",
