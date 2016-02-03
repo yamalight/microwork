@@ -8,7 +8,7 @@ Microwork.js
 [![Coverage Status](https://coveralls.io/repos/github/yamalight/microwork/badge.svg?branch=master)](https://coveralls.io/github/yamalight/microwork?branch=master)
 [![Code docs](https://img.shields.io/badge/code-docs-blue.svg)](http://yamalight.github.io/microwork/)
 
-Microwork.js is a library for simple creation of distributed scalable task runners in node.js with RabbitMQ.
+Microwork.js is a library for simple creation of distributed scalable microservices in node.js with RabbitMQ.
 
 # Installation
 ```sh
@@ -21,13 +21,14 @@ Since Microwork.js is written in ES6, it uses [babel](https://babeljs.io/) to co
 
 # Features
 
-TODO: describe me
+* Simple interface for building distributed (micro)services
+* Easy way to scale services both horizontally (by adding more nodes) and vertically (by adding more subscribers)
 
 # Usage
 
 ## Quick start
 
-Example runner service:
+Example service that subscribe to messages from `do.work` topic and does some work with incoming data (in this case it just appends ` world!` to incoming string):
 ```js
 import Microwork from 'microwork';
 
@@ -41,7 +42,7 @@ await runner.subscribe('do.work', (msg, reply) => {
 await runner.stop();
 ```
 
-Example master service:
+Example service that subscribes to messages from `response.topic` and logs them to console, as well as sends processing request to previously defined service:
 ```js
 import Microwork from 'microwork';
 
@@ -56,10 +57,25 @@ await master.send('do.work', 'hello');
 
 // after work is done - cleanup
 await master.stop();
-
 ```
 
-TODO: more docs
+## Using multiple subscribers to distribute tasks
+
+Example service that adds two different subscribers to the same topic, they will be rotated by RabbitMQ using round-robin strategy (see [RabbitMQ tutorial 2](https://www.rabbitmq.com/tutorials/tutorial-two-javascript.html)):
+```js
+// ...
+// add worker to specific topic
+await runner.subscribe('do.work', (msg, reply) => {
+    reply('response.topic', msg + ' world!');
+});
+// add another worker
+// round-robin will be used to cycle between workers
+await runner.subscribe('do.work', (msg, reply) => {
+    reply('response.topic', msg + ' world! Replies to every other message.');
+});
+```
+
+You can do achieve the same result by instantiating two different services (e.g. on different servers) and subscribing to the same exchange and topic from them. 
 
 ## License
 
