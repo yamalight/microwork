@@ -1,4 +1,5 @@
 import amqp from 'amqplib';
+import uuid from 'node-uuid';
 import sleep from './sleep';
 import logger from './logger';
 
@@ -17,6 +18,11 @@ export class Microwork {
      */
     constructor({host = 'localhost', exchange = 'microwork.default.exchange'}) {
         logger.debug('construct with', host, exchange);
+        /**
+         * Service unique ID
+         * @type {string}
+         */
+        this.id = uuid.v4();
         /**
          * RabbitMQ host address
          * @type {string}
