@@ -96,9 +96,10 @@ export class Microwork {
      * await microworkInstance.unsubscribe('test.topic');
      */
     async unsubscribe(topic) {
-        await this.channel.unbindQueue(this.routeHandlers[topic].queue, this.exchange, topic);
-        await this.channel.deleteQueue(this.routeHandlers[topic].queue);
+        // cancel consuming
         await this.channel.cancel(this.routeHandlers[topic].consumerTag);
+        // remove refs
+        delete this.routeHandlers[topic];
     }
 
     /**
