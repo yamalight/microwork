@@ -166,6 +166,14 @@ To retrieve the subscribers you need to tap into `microwork.node.subscribers` to
 ```js
 await service.subscribe('microwork.node.subscribers', (info) => {
     console.log(info); // <- node info including ID and array of subscribed topics
+    /* e.g.
+    { id: '3a4a5bd0-9c58-4677-b89b-9e5107da265f',
+      subscribers:
+       [ { topic: 'test.sub', subscribers: 1 },
+         { topic: 'test.other.sub', subscribers: 2 },
+         { topic: 'microwork.node.subscribers', subscribers: 1 },
+         { topic: 'microwork.node.report.subscribers', subscribers: 1 } ] }
+     */
 });
 
 await service.send('microwork.node.report.subscribers');

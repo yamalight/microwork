@@ -116,16 +116,31 @@ export class Microwork {
     }
 
     /**
-     * Removes existing subscription or worker
-     * @param  {string} topic Topic to remove subscription/worker from
+     * Removes existing subscription or worker.
+     * If consumerTag is given only corresponding subscription will be removed.
+     * Otherwise, all consumers for given topic will be terminated.
+     * @param  {string} topic         Topic to remove subscription/worker from
+     * @param  {string} consumerTag   Consumer tag to unsubscribe with
      * @return {Promise} Returns promise that can be awaited to ensure removal
-     * @example
+     * @example <caption>Remove one subscription with consumerTag</caption>
+     * await microworkInstance.unsubscribe('test.topic', 'tag');
+     * @example <caption>Remove all subscriptions with topic</caption>
      * await microworkInstance.unsubscribe('test.topic');
      */
-    async unsubscribe(topic) {
+    async unsubscribe(topic, consumerTag) {
+        // if we have consumerTag - only unsub from it
+        if (consumerTag) {
+            // find index
+            const subIndex = this.routeHandlers[topic].findIndex(it => it.consumerTag === consumerTag);
+            // cancel consuming
+            await this.channel.cancel(consumerTag);
+            // remove from subs
+            this.routeHandlers[topic].splice(subIndex, 1);
+            return;
+        }
         // cancel consuming
-        await this.channel.cancel(this.routeHandlers[topic].consumerTag);
-        // remove refs
+        await Promise.all(this.routeHandlers[topic].map(it => this.channel.cancel(it.consumerTag)));
+        // remove whole topic
         delete this.routeHandlers[topic];
     }
 
@@ -169,7 +184,7 @@ export class Microwork {
      * @param  {string}   topic        Topic to subscribe to
      * @param  {Function} handler      Handler function that will get all incoming messages
      * @param  {Object}   queueConfig  Queue config to pass to RabbitMQ
-     * @return {Promise}               Returns promise that can be awaited to ensure termination
+     * @return {string}                Consumer tag that can be used for more precise unsubscribe action
      * @example <caption>Simple subscribe usage</caption>
      * await microworkInstance.subscribe('test.topic', (msg, reply) => {
      * 	if (msg === 'ping') {
@@ -206,10 +221,14 @@ export class Microwork {
             handler(msg, reply);
         }, {noAck: false});
         // push to cleanup
-        this.routeHandlers[topic] = {
+        if (!this.routeHandlers[topic]) {
+            this.routeHandlers[topic] = [];
+        }
+        this.routeHandlers[topic].push({
             queue,
             consumerTag,
-        };
+        });
         logger.info('worker inited, consuming...');
+        return consumerTag;
     }
 }

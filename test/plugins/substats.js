@@ -1,3 +1,4 @@
+/* eslint max-nested-callbacks: [2, 4] */
 import test from 'tape';
 import Microwork from '../../src';
 import SubscriberStats from '../../src/plugins/substats';
@@ -13,14 +14,16 @@ test('SubscriberStats', it => {
         // dummy subscription
         const testSubs = ['test.sub', 'test.other.sub'];
         await master.subscribe(testSubs[0], () => {});
-        // dummy subscription
+        await master.subscribe(testSubs[1], () => {});
         await master.subscribe(testSubs[1], () => {});
         // subscribe
         await master.subscribe('microwork.node.subscribers', async (info) => {
             // validate object
             t.equal(info.id, master.id, '# should get own id');
-            t.notEqual(info.subscribers.indexOf(testSubs[0]), -1, '# should contain test subscription one');
-            t.notEqual(info.subscribers.indexOf(testSubs[1]), -1, '# should contain test subscription two');
+            t.equal(info.subscribers.find(sub => sub.topic === testSubs[0]).subscribers, 1,
+                '# should contain test subscription one');
+            t.equal(info.subscribers.find(sub => sub.topic === testSubs[1]).subscribers, 2,
+                '# should contain test subscription two');
             await master.stop();
             t.end();
         });
