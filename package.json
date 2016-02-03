@@ -4,6 +4,7 @@
   "description": "Microwork - simple distributed task runners in node.js with RabbitMQ",
   "main": "lib/index.js",
   "scripts": {
+    "cover": "babel-node ./node_modules/istanbul/lib/cli cover ./node_modules/tape/bin/tape ./test",
     "prepublish": "babel -d lib src/",
     "start-rabbit": "docker run -d -p 5672:5672 -p 8081:15672 --name microwork-rabbit rabbitmq:management",
     "stop-rabbit": "docker stop microwork-rabbit",
@@ -38,6 +39,7 @@
     "babel-core": "^6.4.5",
     "babel-preset-es2015-node": "^5.0.2",
     "babel-preset-stage-1": "^6.3.13",
+    "istanbul": "^1.0.0-alpha.2",
     "tap-spec": "^4.1.1",
     "tape": "^4.4.0"
   }

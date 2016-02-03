@@ -3,6 +3,7 @@ import winston from 'winston';
 // only show info in production mode
 let level = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 // only show erros in test mode
+/* istanbul ignore if  */
 if (process.env.NODE_ENV === 'test') {
     level = 'error';
 }
