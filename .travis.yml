@@ -3,8 +3,7 @@ node_js:
   - "stable"
 services:
   - rabbitmq
-after_success: npm run coveralls
-deploy: bash ./gh-deploy.sh
+after_success: npm run coveralls && ./gh-deploy.sh
 env:
   global:
     - GH_REF: github.com/yamalight/microwork.git
