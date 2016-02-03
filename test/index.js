@@ -1,85 +1,97 @@
 import test from 'tape';
-import initMasterAndRunner, {initRunner} from './init';
+import Microwork from '../src';
 
-test('should deliver message from worker to runner', async (t) => {
-    t.plan(1);
-    // get master and runner
-    const {master, runner, cleanup} = await initMasterAndRunner('master.to.runner');
-    // test route and message
-    const route = 'test.path';
-    const message = {hello: 'world'};
-    // test consumer that should receive message
-    const consumer = async (msg) => {
-        t.deepEqual(message, msg, 'should get correct incoming object');
-        await cleanup();
-        t.end();
-    };
+test('Microwork', it => {
+    it.test('  -> should deliver message from worker to runner', async (t) => {
+        // get master and runner
+        const exchange = 'master.to.runner';
+        const master = new Microwork({host: 'docker.dev', exchange});
+        const runner = new Microwork({host: 'docker.dev', exchange});
+        // test topic and message
+        const topic = 'test.path';
+        const message = {hello: 'world'};
+        // test consumer that should receive message
+        const consumer = async (msg) => {
+            t.deepEqual(message, msg, '# should get correct incoming object');
+            await master.stop();
+            await runner.stop();
+            t.end();
+        };
 
-    // add worker
-    await runner.addWorker(route, consumer);
-    // send message
-    await master.run(route, message);
-});
-
-test('should get reply for master query from runner', async (t) => {
-    t.plan(2);
-    // get master and runner
-    const {master, runner, cleanup} = await initMasterAndRunner('master.runner.reply');
-    // test route and message
-    const route = 'test.request';
-    const message = 'ping';
-    // test consumer that should receive message
-    const consumer = async (msg, reply) => {
-        t.equal(msg, 'ping', 'should get correct incoming message');
-        reply(route + '.response', 'pong');
-    };
-    // listen for reply
-    await master.subscribe(route + '.response', async (msg) => {
-        t.equal(msg, 'pong', 'should get correct reply');
-        await cleanup();
-        t.end();
+        // add worker
+        await runner.addWorker(topic, consumer);
+        // send message
+        await master.send(topic, message);
     });
 
-    // add worker
-    await runner.addWorker(route, consumer);
-    // send message
-    await master.run(route, message);
-});
+    it.test('should get reply for master query from runner', async (t) => {
+        // get master and runner
+        const exchange = 'master.runner.reply';
+        const master = new Microwork({host: 'docker.dev', exchange});
+        const runner = new Microwork({host: 'docker.dev', exchange});
+        // test topic and message
+        const topic = 'test.request';
+        const message = 'ping';
+        // test consumer that should receive message
+        const consumer = (msg, reply) => {
+            t.equal(msg, 'ping', 'should get correct incoming message');
+            reply(topic + '.response', 'pong');
+        };
+        // listen for reply
+        await master.subscribe(topic + '.response', async (msg) => {
+            t.equal(msg, 'pong', 'should get correct reply');
+            await master.stop();
+            await runner.stop();
+            t.end();
+        });
 
-test('should use round-robin to distribute tasks between three runners', async (t) => {
-    t.plan(6);
-    // get master and runner
-    const {master, runner, cleanup} = await initMasterAndRunner('master.multi.runners');
-    // init another runner
-    const {runner: runnerTwo, cleanup: cleanupTwo} = await initRunner('master.multi.runners');
-    // init another runner
-    const {runner: runnerThree, cleanup: cleanupThree} = await initRunner('master.multi.runners');
-    // test route and message
-    const route = 'test.request';
-    const messages = ['ping', 'ping_two', 'ping_three'];
-    const replies = ['pong', 'pong_two', 'ping_three'];
-    // test consumer that should receive message
-    const consumer = async (idx, msg, reply) => {
-        t.equal(msg, messages[idx], 'should get correct incoming message');
-        reply(route + '.response', replies[idx]);
-    };
-    // listen for reply
-    await master.subscribe(route + '.response', async (msg) => {
-        t.notEqual(replies.indexOf(msg), -1, 'should get correct reply');
-        // cleanup after last msg
-        if (msg === replies[replies.length - 1]) {
-            await cleanup();
-            await cleanupTwo();
-            await cleanupThree();
-        }
+        // add worker
+        await runner.addWorker(topic, consumer);
+        // send message
+        await master.send(topic, message);
     });
 
-    // add worker
-    await runner.addWorker(route, consumer.bind(null, 0));
-    await runnerTwo.addWorker(route, consumer.bind(null, 1));
-    await runnerThree.addWorker(route, consumer.bind(null, 2));
-    // send message
-    await master.run(route, messages[0]);
-    await master.run(route, messages[1]);
-    await master.run(route, messages[2]);
+    it.test('should use round-robin to distribute tasks between three runners', async (t) => {
+        t.plan(6);
+        // get master and three runners
+        const exchange = 'master.multi.runners';
+        const master = new Microwork({host: 'docker.dev', exchange});
+        const runner = new Microwork({host: 'docker.dev', exchange});
+        const runnerTwo = new Microwork({host: 'docker.dev', exchange});
+        const runnerThree = new Microwork({host: 'docker.dev', exchange});
+        // test topic and message
+        const topic = 'test.request';
+        const messages = ['ping', 'ping_two', 'ping_three'];
+        const replies = ['pong', 'pong_two', 'ping_three'];
+        const repliesCheck = [...replies];
+        // test consumer that should receive message
+        const consumer = async (idx, msg, reply) => {
+            t.equal(msg, messages[idx], 'should get correct incoming message');
+            reply(topic + '.response', replies[idx]);
+        };
+        // listen for reply
+        await master.subscribe(topic + '.response', async (msg) => {
+            // check
+            const index = repliesCheck.indexOf(msg);
+            t.notEqual(index, -1, 'should get correct reply');
+            // remove from array
+            repliesCheck.splice(index, 1);
+            // cleanup after last msg
+            if (repliesCheck.length === 0) {
+                await master.stop();
+                await runner.stop();
+                await runnerTwo.stop();
+                await runnerThree.stop();
+            }
+        });
+
+        // add worker
+        await runner.addWorker(topic, consumer.bind(null, 0));
+        await runnerTwo.addWorker(topic, consumer.bind(null, 1));
+        await runnerThree.addWorker(topic, consumer.bind(null, 2));
+        // send message
+        await master.send(topic, messages[0]);
+        await master.send(topic, messages[1]);
+        await master.send(topic, messages[2]);
+    });
 });

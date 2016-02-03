@@ -22,13 +22,11 @@ TODO: describe me
 
 Example runner service:
 ```js
-import {Runner} from 'microwork';
+import Microwork from 'microwork';
 
 // create task runner
-const runner = new Runner({host: 'your.rabbit.host', exchange: 'your.exchange'});
-// connect it to rabbit
-await runner.connect();
-// add worker to specific route
+const runner = new Microwork({host: 'your.rabbit.host', exchange: 'your.exchange'});
+// add worker to specific topic
 await runner.addWorker('do.work', (msg, reply) => {
     reply('response.topic', msg + ' world!');
 });
@@ -38,18 +36,16 @@ await runner.stop();
 
 Example master service:
 ```js
-import {Master} from 'microwork';
+import Microwork from 'microwork';
 
 // create master
-const master = new Master({host: 'your.rabbit.host', exchange: 'your.exchange'});
-// connect
-await master.connect();
+const master = new Microwork({host: 'your.rabbit.host', exchange: 'your.exchange'});
 // listen for reply from workers
 await master.subscribe('response.topic', (msg) => {
     console.log(msg); // -> "hello world!"
 });
 // send message to workers
-await master.run('do.work', 'hello');
+await master.send('do.work', 'hello');
 
 // after work is done - cleanup
 await master.stop();

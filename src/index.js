@@ -1,2 +1,3 @@
-export {Master} from './master';
-export {Runner} from './runner';
+import {Microwork} from './microwork';
+
+export default Microwork;
