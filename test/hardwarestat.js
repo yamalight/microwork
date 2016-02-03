@@ -3,7 +3,7 @@ import Microwork from '../src';
 import HardwareStat from '../src/plugins/hardwarestat';
 
 test('HardwareStat', it => {
-    it.test('  -> should report every 1s', async (t) => {
+    it.test('  -> should report every 500ms', async (t) => {
         t.plan(4);
         const exchange = 'master.hardware.autoreport';
         // create service
