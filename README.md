@@ -1,6 +1,10 @@
 Microwork.js
 =========================
 
+[![npm](https://img.shields.io/npm/v/microwork.svg)](https://www.npmjs.com/package/microwork)
+[![MIT](https://img.shields.io/npm/l/microwork.svg)](http://opensource.org/licenses/MIT)
+[![Build Status](https://travis-ci.org/yamalight/microwork.svg?branch=master)](https://travis-ci.org/yamalight/microwork)
+
 Microwork.js is a library for simple creation of distributed scalable task runners in node.js with RabbitMQ.
 
 # Installation
