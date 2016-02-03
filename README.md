@@ -6,7 +6,7 @@ Microwork.js
 [![Build Status](https://travis-ci.org/yamalight/microwork.svg?branch=master)](https://travis-ci.org/yamalight/microwork)
 [![bitHound Overall Score](https://www.bithound.io/github/yamalight/microwork/badges/score.svg)](https://www.bithound.io/github/yamalight/microwork)
 [![Coverage Status](https://coveralls.io/repos/github/yamalight/microwork/badge.svg?branch=master)](https://coveralls.io/github/yamalight/microwork?branch=master)
-
+[![Code docs](https://img.shields.io/badge/code-docs-blue.svg)](http://yamalight.github.io/microwork/)
 
 Microwork.js is a library for simple creation of distributed scalable task runners in node.js with RabbitMQ.
 

@@ -4,7 +4,7 @@ node_js:
 services:
   - rabbitmq
 after_success: 'npm run coveralls'
-deploy: './gh-deploy.sh'
+deploy: 'bash ./gh-deploy.sh'
 env:
   global:
     - GH_REF: github.com/yamalight/microwork.git
