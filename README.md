@@ -101,8 +101,31 @@ service.autoreportHardwareStats();
 
 To listen to the stats you need to tap into `microwok.node.status` topic, like so:
 ```js
-await service.subscribe('microwok.node.status', (stats) => {
+await service.subscribe('microwork.node.status', (stats) => {
     console.log(stats); // <- stats object
+});
+```
+
+### Health plugin
+
+Provides basic keep-alive signal from node.
+
+Example usage:
+```js
+import HealthCheck from 'microwork/lib/plugins/healthcheck';
+
+// create service
+const service = new Microwork({host: 'docker.dev', exchange});
+// register plugin
+service.registerPlugin(HealthCheck);
+// start autoreport
+service.autoreportHealth();
+```
+
+To listen to the keep-alive signals you need to tap into `microwok.node.alive` topic, like so:
+```js
+await service.subscribe('microwork.node.alive', (id) => {
+    console.log(id); // <- live node id
 });
 ```
 

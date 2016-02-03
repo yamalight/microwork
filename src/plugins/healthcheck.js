@@ -1,4 +1,4 @@
-const HealthChecks = {
+const HealthCheck = {
     healthchecksReportIntervalRef: null,
     healthchecksReportInterval: 30000,
 
@@ -19,4 +19,4 @@ const HealthChecks = {
     },
 };
 
-export default HealthChecks;
+export default HealthCheck;

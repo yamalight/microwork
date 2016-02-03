@@ -1,15 +1,15 @@
 import test from 'tape';
 import Microwork from '../src';
-import HealthChecks from '../src/plugins/healthcheck';
+import HealthCheck from '../src/plugins/healthcheck';
 
-test('HealthChecks', it => {
+test('HealthCheck', it => {
     it.test('  -> should report every 500ms', async (t) => {
         t.plan(2);
         const exchange = 'master.health.autoreport';
         // create service
         const master = new Microwork({host: 'docker.dev', exchange});
         // register plugin
-        master.registerPlugin(HealthChecks);
+        master.registerPlugin(HealthCheck);
         // set report interval to 500 for testing
         master.healthchecksReportInterval = 500;
         // subscribe
