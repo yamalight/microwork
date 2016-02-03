@@ -1,6 +1,6 @@
 {
   "name": "microwork",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Microwork - simple distributed task runners in node.js with RabbitMQ",
   "main": "lib/index.js",
   "scripts": {
