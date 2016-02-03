@@ -34,7 +34,7 @@ import Microwork from 'microwork';
 // create task runner
 const runner = new Microwork({host: 'your.rabbit.host', exchange: 'your.exchange'});
 // add worker to specific topic
-await runner.addWorker('do.work', (msg, reply) => {
+await runner.subscribe('do.work', (msg, reply) => {
     reply('response.topic', msg + ' world!');
 });
 // after work is done - cleanup
