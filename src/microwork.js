@@ -141,7 +141,13 @@ export class Microwork {
      * @param  {Function} handler      Handler function that will get all incoming messages
      * @param  {Object}   queueConfig  Queue config to pass to RabbitMQ
      * @return {Promise}               Returns promise that can be awaited to ensure termination
-     * @example
+     * @example <caption>Simple subscribe usage</caption>
+     * await microworkInstance.subscribe('test.topic', (msg, reply) => {
+     * 	if (msg === 'ping') {
+     * 		reply('test.reply', 'pong');
+     * 	}
+     * });
+     * @example <caption>Subscribe with custom RabbitMQ options</caption>
      * await microworkInstance.subscribe('test.topic', (msg, reply) => {
      * 	if (msg === 'ping') {
      * 		reply('test.reply', 'pong');
