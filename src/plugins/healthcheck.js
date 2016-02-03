@@ -3,7 +3,7 @@ const HealthCheck = {
     healthchecksReportInterval: 30000,
 
     reportHealth() {
-        this.send('microwok.node.alive', this.id, {expiration: this.healthchecksReportInterval});
+        this.send('microwork.node.alive', this.id, {expiration: this.healthchecksReportInterval});
     },
 
     autoreportHealth() {

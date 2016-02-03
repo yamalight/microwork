@@ -31,7 +31,7 @@ const HardwareStat = {
     },
 
     reportHardwareStats() {
-        this.send('microwok.node.status', this.hwStat(), {expiration: this.hardwareReportInterval});
+        this.send('microwork.node.status', this.hwStat(), {expiration: this.hardwareReportInterval});
     },
 
     autoreportHardwareStats() {

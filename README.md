@@ -99,7 +99,7 @@ service.registerPlugin(HardwareStat);
 service.autoreportHardwareStats();
 ```
 
-To listen to the stats you need to tap into `microwok.node.status` topic, like so:
+To listen to the stats you need to tap into `microwork.node.status` topic, like so:
 ```js
 await service.subscribe('microwork.node.status', (stats) => {
     console.log(stats); // <- stats object
@@ -122,7 +122,7 @@ service.registerPlugin(HealthCheck);
 service.autoreportHealth();
 ```
 
-To listen to the keep-alive signals you need to tap into `microwok.node.alive` topic, like so:
+To listen to the keep-alive signals you need to tap into `microwork.node.alive` topic, like so:
 ```js
 await service.subscribe('microwork.node.alive', (id) => {
     console.log(id); // <- live node id

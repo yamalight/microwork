@@ -14,7 +14,7 @@ test('HealthCheck', it => {
         master.healthchecksReportInterval = 500;
         // subscribe
         let index = 2;
-        await master.subscribe('microwok.node.alive', async (id) => {
+        await master.subscribe('microwork.node.alive', async (id) => {
             // validate object
             t.equal(id, master.id, '# should get own id');
             index--;

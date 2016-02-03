@@ -14,7 +14,7 @@ test('HardwareStat', it => {
         master.hardwareReportInterval = 500;
         // subscribe
         let index = 2;
-        await master.subscribe('microwok.node.status', async (stats) => {
+        await master.subscribe('microwork.node.status', async (stats) => {
             // validate object
             t.ok(stats.hasOwnProperty('cpu'), '# should have cpu stats');
             t.ok(stats.hasOwnProperty('mem'), '# should have mem stats');
