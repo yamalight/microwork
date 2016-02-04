@@ -23,7 +23,7 @@ Since Microwork.js is written in ES6, it uses [babel](https://babeljs.io/) to co
 
 * Simple interface for building distributed (micro)services
 * Easy way to scale services both horizontally (by adding more nodes) and vertically (by adding more subscribers)
-* Extensible with [plugins](Plugins.md)
+* Extensible with [plugins](docs/Plugins.md)
 
 # Usage
 
@@ -60,41 +60,7 @@ await master.send('do.work', 'hello');
 await master.stop();
 ```
 
-## Acknowledging / rejecting messages
-
-By default Microwork auto-acks all incoming messages for subscribers.
-But if needed this can also be done manually.
-To do so, provide subscription config, like so:
-
-```js
-// listen for reply from workers
-await master.subscribe('response.topic', (msg, reply, ack, nack) => {
-    if (msg === 'hello world!') {
-        console.log(msg); // -> "hello world!"
-        ack();
-    } else {
-        nack();
-    }
-}, queueConfig, consumeConfig, {ack: false});
-```
-
-## Using multiple subscribers to distribute tasks
-
-Example service that adds two different subscribers to the same topic, they will be rotated by RabbitMQ using round-robin strategy (see [RabbitMQ tutorial 2](https://www.rabbitmq.com/tutorials/tutorial-two-javascript.html)):
-```js
-// ...
-// add worker to specific topic
-await runner.subscribe('do.work', (msg, reply) => {
-    reply('response.topic', msg + ' world!');
-});
-// add another worker
-// round-robin will be used to cycle between workers
-await runner.subscribe('do.work', (msg, reply) => {
-    reply('response.topic', msg + ' world! Replies to every other message.');
-});
-```
-
-You can do achieve the same result by instantiating two different services (e.g. on different servers) and subscribing to the same exchange and topic from them.
+For more examples see project [documentation](docs/README.md).
 
 ## License
 
