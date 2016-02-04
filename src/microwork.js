@@ -181,10 +181,12 @@ export class Microwork {
 
     /**
      * Create subscription to given topic that will pass all incoming messages to given handler
-     * @param  {string}   topic        Topic to subscribe to
-     * @param  {Function} handler      Handler function that will get all incoming messages
-     * @param  {Object}   queueConfig  Queue config to pass to RabbitMQ
-     * @return {string}                Consumer tag that can be used for more precise unsubscribe action
+     * @param  {string}   topic          Topic to subscribe to
+     * @param  {Function} handler        Handler function that will get all incoming messages
+     * @param  {Object}   queueConfig    Queue config to pass to RabbitMQ
+     * @param  {Object}   consumeConfig  Consume config to pass to RabbitMQ
+     * @param  {Object}   config         Config for subscriber (e.g. wether to auto-ack messages)
+     * @return {string}                  Consumer tag that can be used for more precise unsubscribe action
      * @example <caption>Simple subscribe usage</caption>
      * await microworkInstance.subscribe('test.topic', (msg, reply) => {
      * 	if (msg === 'ping') {
@@ -197,8 +199,38 @@ export class Microwork {
      * 		reply('test.reply', 'pong');
      * 	}
      * }, {durable: true, exclusive: true});
+     * @example <caption>Subscribe without auto-ack</caption>
+     * await microworkInstance.subscribe('test.topic', (msg, reply, ack, nack) => {
+     * 	if (msg === 'ping') {
+     * 		ack();
+     * 		reply('test.reply', 'pong');
+     * 	} else {
+     * 		nack();
+     * 	}
+     * }, {}, {}, {ack: false});
      */
-    async subscribe(topic, handler, queueConfig = {durable: true}) {
+    async subscribe(
+        topic,
+        handler,
+        queueConfig = {},
+        consumeConfig = {},
+        config = {}
+    ) {
+        // merge queueConfig with defaults
+        queueConfig = {
+            durable: true,
+            ...queueConfig,
+        };
+        // merge consumeConfig with defaults
+        consumeConfig = {
+            noAck: false,
+            ...consumeConfig,
+        };
+        // merge config with defaults
+        config = {
+            ack: true,
+            ...config,
+        };
         // wait for connection
         await this.connect();
         // get queue
@@ -215,11 +247,15 @@ export class Microwork {
             }
             const msg = JSON.parse(data.content.toString());
             // ack
-            this.channel.ack(data);
+            if (config.ack) {
+                this.channel.ack(data);
+            }
             // pass to handler
             const reply = this.send.bind(this);
-            handler(msg, reply);
-        }, {noAck: false});
+            const ack = this.channel.ack.bind(this.channel, data);
+            const nack = this.channel.nack.bind(this.channel, data);
+            handler(msg, reply, ack, nack);
+        }, consumeConfig);
         // push to cleanup
         if (!this.routeHandlers[topic]) {
             this.routeHandlers[topic] = [];

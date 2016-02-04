@@ -1,6 +1,8 @@
 import test from 'tape';
 import Microwork from '../src';
 
+const queueConfig = {durable: true, exclusive: true};
+
 test('Microwork', it => {
     it.test('  -> should deliver message from one service to another', async (t) => {
         const exchange = 'master.to.runner';
@@ -42,7 +44,7 @@ test('Microwork', it => {
             await master.stop();
             await runner.stop();
             t.end();
-        }, {durable: true, exclusive: true});
+        }, queueConfig);
         // subscribe for request
         await runner.subscribe(topic, consumer);
         // send message
@@ -81,7 +83,7 @@ test('Microwork', it => {
                 await runnerTwo.stop();
                 await runnerThree.stop();
             }
-        }, {durable: true, exclusive: true});
+        }, queueConfig);
 
         // add subscriptions for consumers
         await runner.subscribe(topic, consumer.bind(null, 0));
@@ -91,6 +93,50 @@ test('Microwork', it => {
         await master.send(topic, messages[0]);
         await master.send(topic, messages[1]);
         await master.send(topic, messages[2]);
+    });
+
+    it.test('  -> should not auto-ack messages', async (t) => {
+        t.plan(4);
+        const exchange = 'master.noack.runners';
+        // create master and three runners
+        const master = new Microwork({host: 'docker.dev', exchange});
+        const runner = new Microwork({host: 'docker.dev', exchange});
+        const runnerTwo = new Microwork({host: 'docker.dev', exchange});
+        // test topic and message
+        const topic = 'test.request';
+        const messages = ['ping', 'ping_two'];
+        const replies = ['pong', 'pong_two'];
+        const repliesCheck = [...replies];
+        // test consumer that should receive message
+        const consumer = async (msg, reply, ack) => {
+            const idx = messages.indexOf(msg);
+            t.notEqual(idx, -1, '# should get correct incoming message');
+            ack();
+            reply(topic + '.response', replies[idx]);
+        };
+        // always reject messages
+        const rejecter = (msg, reply, ack, nack) => nack();
+        // subscribe for reply
+        await master.subscribe(topic + '.response', async (msg) => {
+            // check
+            const index = repliesCheck.indexOf(msg);
+            t.notEqual(index, -1, '# should get correct reply');
+            // remove from array
+            repliesCheck.splice(index, 1);
+            // cleanup after last msg
+            if (repliesCheck.length === 0) {
+                await master.stop();
+                await runner.stop();
+                await runnerTwo.stop();
+            }
+        }, queueConfig);
+
+        // add subscriptions for consumers
+        await runner.subscribe(topic, consumer, {}, {}, {ack: false});
+        await runnerTwo.subscribe(topic, rejecter, {}, {}, {ack: false});
+        // send messages
+        await master.send(topic, messages[0]);
+        await master.send(topic, messages[1]);
     });
 
     it.test('  -> should use round-robin to distribute tasks between three subscribers', async (t) => {
@@ -121,7 +167,7 @@ test('Microwork', it => {
                 await master.stop();
                 await runner.stop();
             }
-        }, {durable: true, exclusive: true});
+        }, queueConfig);
 
         // add subscriptions for consumers
         await runner.subscribe(topic, consumer.bind(null, 0));
@@ -174,7 +220,7 @@ test('Microwork', it => {
                 await runnerTwo.stop();
                 t.end();
             }
-        }, {durable: true, exclusive: true});
+        }, queueConfig);
         // subscribe for requests
         await runner.subscribe(topic, consumer);
         await runnerTwo.subscribe(topic, consumerTwo);
@@ -224,7 +270,7 @@ test('Microwork', it => {
                 await runner.stop();
                 t.end();
             }
-        }, {durable: true, exclusive: true});
+        }, queueConfig);
         // subscribe for requests
         await runner.subscribe(topic, consumer);
         // subscribe with second consumer and save tag

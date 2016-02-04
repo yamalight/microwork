@@ -121,7 +121,7 @@
     "max-statements": [1, 20],
     "complexity": [1, 3],
     "max-len": [2, 120],
-    "max-params": [2, 3],
+    "max-params": [2, 5],
     // jsx rules
     "react/jsx-quotes": 1,
     "react/jsx-no-undef": 1,
