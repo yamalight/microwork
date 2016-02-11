@@ -1,7 +1,7 @@
 import test from 'tape';
 import Microwork from '../src';
 
-const queueConfig = {durable: true, exclusive: true};
+const queueConfig = {exclusive: true};
 
 test('Microwork', it => {
     it.test('  -> should deliver message from one service to another', async (t) => {

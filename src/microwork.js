@@ -198,7 +198,7 @@ export class Microwork {
      * 	if (msg === 'ping') {
      * 		reply('test.reply', 'pong');
      * 	}
-     * }, {durable: true, exclusive: true});
+     * }, {durable: true, autoDelete: true, exclusive: true});
      * @example <caption>Subscribe without auto-ack</caption>
      * await microworkInstance.subscribe('test.topic', (msg, reply, ack, nack) => {
      * 	if (msg === 'ping') {
@@ -219,6 +219,7 @@ export class Microwork {
         // merge queueConfig with defaults
         queueConfig = {
             durable: true,
+            autoDelete: true,
             ...queueConfig,
         };
         // merge consumeConfig with defaults

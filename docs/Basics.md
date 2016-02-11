@@ -46,7 +46,7 @@ await service.subscribe('some.topic', (msg) => {
 ```
 
 If nothing's passed, default configs will be used.  
-Queue config defaults to `{durable: true}`.  
+Queue config defaults to `{durable: true, autoDelete: true}`.  
 Consume config defaults to `{noAck: false}`.
 
 ## Acknowledging / rejecting messages
