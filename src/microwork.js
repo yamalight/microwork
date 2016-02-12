@@ -9,14 +9,15 @@ import logger from './logger';
 export class Microwork {
     /**
      * Microwork class construct
-     * @param  {object} opts            Microwork instance options
-     * @param  {string} opts.host       RabbitMQ host to use
-     * @param  {string} opts.exchange   RabbitMQ exchange to use
+     * @param  {object} opts                    Microwork instance options
+     * @param  {string} opts.host               RabbitMQ host to use
+     * @param  {string} opts.exchange           RabbitMQ exchange to use
+     * @param  {Number} opts.reconnectTimeout   Timeout before trying to reconnect to RabbitMQ on failure
      * @return {void}
      * @example
      * const service = new Microwork({host: 'localhost', exchange: 'test.exchange'});
      */
-    constructor({host = 'localhost', exchange = 'microwork.default.exchange'}) {
+    constructor({host = 'localhost', exchange = 'microwork.default.exchange', reconnectTimeout = 5000}) {
         logger.debug('construct with', host, exchange);
         /**
          * Service unique ID
@@ -57,7 +58,16 @@ export class Microwork {
          */
         this.channel = undefined;
         // init connection
-        this.connect();
+        this.connect().catch(e => {
+            if (e.code === 'ECONNREFUSED') {
+                logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(reconnectTimeout / 1000)}s...`);
+                this.connecting = false;
+                setTimeout(this.connect.bind(this), reconnectTimeout);
+                return;
+            }
+            logger.error('Error connecting:', e);
+            throw e;
+        });
     }
 
     /**

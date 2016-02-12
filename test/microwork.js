@@ -279,4 +279,14 @@ test('Microwork', it => {
         await master.send(topic, message);
         await master.send(topic, message);
     });
+
+    it.test('  -> should try to reconnect to rabbit on fail', async (t) => {
+        // create worker
+        const master = new Microwork({host: 'localhost', reconnectTimeout: 500});
+        // override connect function to make sure it's called second time
+        master.connect = () => {
+            t.ok(true, '# should try to reconnect');
+            t.end();
+        };
+    });
 });
