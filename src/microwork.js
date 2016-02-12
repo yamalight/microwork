@@ -57,17 +57,33 @@ export class Microwork {
          * @private
          */
         this.channel = undefined;
+        /**
+         * Reconnect timeout reference
+         * @type {Number}
+         * @private
+         */
+        this.reconnect = undefined;
+        /**
+         * Reconnect timeout timer stored for later usage
+         * @type {Number}
+         */
+        this.reconnectTimeout = reconnectTimeout;
         // init connection
-        this.connect().catch(e => {
-            if (e.code === 'ECONNREFUSED') {
-                logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(reconnectTimeout / 1000)}s...`);
-                this.connecting = false;
-                setTimeout(this.connect.bind(this), reconnectTimeout);
-                return;
-            }
-            logger.error('Error connecting:', e);
-            throw e;
-        });
+        this.connect().catch(this.tryReconnect.bind(this));
+    }
+
+    tryReconnect(e) {
+        if (e.code === 'ECONNREFUSED' && !this.reconnect) {
+            logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(this.reconnectTimeout / 1000)}s...`);
+            this.connecting = false;
+            this.reconnect = setTimeout(() => {
+                this.reconnect = undefined;
+                this.connect(true).catch(this.tryReconnect.bind(this));
+            }, this.reconnectTimeout);
+            return;
+        }
+        logger.error('Error connecting:', e);
+        throw e;
     }
 
     /**
@@ -93,10 +109,15 @@ export class Microwork {
 
     /**
      * Initializes connection to RabbitMQ
-     * @return {Promise} Returns promise that can be awaited to ensure connection
+     * @param  {Boolean} calledFromTimer    Defines whether function was called from reconnect timer
+     * @return {Promise}                    Returns promise that can be awaited to ensure connection
      * @private
      */
-    async connect() {
+    async connect(calledFromTimer = false) {
+        // if not called from timer and reconnect pending - return self after delay
+        if (!calledFromTimer && this.reconnect) {
+            return sleep(this.reconnectTimeout).then(() => this.connect());
+        }
         // if connecting, wait a bit, then return self
         if (this.connecting) {
             return sleep(50).then(() => this.connect());
@@ -161,6 +182,11 @@ export class Microwork {
      * await microworkInstance.stop();
      */
     async stop() {
+        if (!this.connection && this.reconnect) {
+            logger.debug('not connected, cleaning reconnect timeout');
+            clearTimeout(this.reconnect);
+            return;
+        }
         // cleanup queues and routes if any are present
         const paths = Object.keys(this.routeHandlers);
         if (paths.length) {

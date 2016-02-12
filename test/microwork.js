@@ -282,11 +282,42 @@ test('Microwork', it => {
 
     it.test('  -> should try to reconnect to rabbit on fail', async (t) => {
         // create worker
-        const master = new Microwork({host: 'localhost', reconnectTimeout: 500});
+        const master = new Microwork({host: 'docker.dev:1234', reconnectTimeout: 500});
         // override connect function to make sure it's called second time
         master.connect = () => {
             t.ok(true, '# should try to reconnect');
             t.end();
+            return new Promise(r => r());
         };
+    });
+
+    it.test('  -> should allow stopping while trying to reconnect to rabbit', async (t) => {
+        // create worker
+        const master = new Microwork({host: 'docker.dev:1234', reconnectTimeout: 1000});
+        setTimeout(async () => {
+            await master.stop();
+            t.ok(true, '# should stop connection retries');
+            t.end();
+        }, 100);
+    });
+
+    it.test('  -> should allow calling send while trying to reconnect to rabbit', async (t) => {
+        // create worker
+        const exchange = 'reconnect.text.exchange';
+        const master = new Microwork({host: 'docker.dev', exchange});
+        const worker = new Microwork({host: 'docker.dev:1234', exchange, reconnectTimeout: 500});
+        // subscribe to message from master
+        const topic = 'test.topic';
+        const testMessage = 'hello';
+        await master.subscribe(topic, async (msg) => {
+            t.equal(msg, testMessage, '# should receive test message');
+            t.end();
+            await master.stop();
+            await worker.stop();
+        });
+        // say we want to post message
+        worker.send(topic, testMessage);
+        // swap out host for real one so that next connect goes through
+        worker.host = 'docker.dev';
     });
 });
