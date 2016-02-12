@@ -1,5 +1,14 @@
 # Basics
 
+## Defining auto-reconnect interval
+
+Microwork will try to reconnect to RabbitMQ on fail.
+It is possible to set the interval (defaults to 5s) which will be used, like so:
+```js
+// try to reconnect every 1000ms
+const service = new Microwork({host, exchange, reconnectTimeout: 1000});
+```
+
 ## Replying from subscribers
 
 Microwork provides a simple way to reply from within the subscriber callback without any need for subscriber to be aware of the service.
