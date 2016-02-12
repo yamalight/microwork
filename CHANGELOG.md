@@ -1,4 +1,9 @@
 
+0.7.1 / 2016-02-12
+==================
+
+  * better reconnect mechanics that allow for other methods and cancelation
+
 0.7.0 / 2016-02-12
 ==================
 
