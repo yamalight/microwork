@@ -2,6 +2,7 @@ import amqp from 'amqplib';
 import uuid from 'node-uuid';
 import sleep from './sleep';
 import createLogger from './logger';
+import winston from 'winston';
 
 /**
  * Core Microwork class that provides a way to create new microservice
@@ -17,9 +18,14 @@ export class Microwork {
      * @example
      * const service = new Microwork({host: 'localhost', exchange: 'test.exchange'});
      */
-    constructor({host = 'localhost', exchange = 'microwork.default.exchange', reconnectTimeout = 5000, loggerConfig}) {
+    constructor({
+        host = 'localhost',
+        exchange = 'microwork.default.exchange',
+        reconnectTimeout = 5000,
+        loggingTransports,
+    }) {
         // init logger
-        this.initLogger(loggerConfig);
+        this.initLogger(loggingTransports);
         // log
         this.logger.debug('construct with', host, exchange);
         /**
@@ -77,24 +83,26 @@ export class Microwork {
 
     /**
      * Initialize logger with new options
-     * @param  {Object} opts   Logger options, see winston.js for reference
+     * @param  {Object} transports   Logger options, see winston.js for reference
      * @return {void}
      * @private
      */
-    initLogger(opts = {disableLogging: false, label: 'microwork'}) {
-        // init logger
-        // only show info in production mode
-        let level = opts.level || process.env.NODE_ENV === 'production' ? 'info' : 'debug';
-        // only show erros in test mode
-        /* istanbul ignore if  */
-        if (process.env.NODE_ENV === 'test') {
-            level = 'error';
+    initLogger(transports = []) {
+        if (transports.length === 0) {
+            // only show info in production mode
+            let level = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
+            // only show erros in test mode
+            /* istanbul ignore if  */
+            if (process.env.NODE_ENV === 'test') {
+                level = 'error';
+            }
+            transports.push(new winston.transports.Console({level}));
         }
         /**
          * Logger
          * @private
          */
-        this.logger = createLogger({level, ...opts});
+        this.logger = createLogger(transports);
     }
 
     tryReconnect(e) {
