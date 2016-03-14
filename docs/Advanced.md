@@ -17,3 +17,16 @@ await runner.subscribe('do.work', (msg, reply) => {
 ```
 
 You can do achieve the same result by instantiating two different services (e.g. on different servers) and subscribing to the same exchange and topic from them.
+
+## Overriding logging options
+
+Microwork uses [winston](https://github.com/winstonjs/winston) output for logging.
+By default Console logger is used, but it is possible to override logger transport settings.
+You can do that by passing an array of logging transports you wish to use to Microwork constructor, like so:
+```js
+import winston from 'winston';
+
+const loggingTransports = [new winston.transports.Console({level: 'error'})];
+
+const runner = new Microwork({loggingTransports});
+```

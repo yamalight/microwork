@@ -1,4 +1,9 @@
 
+0.8.0 / 2016-03-14
+==================
+
+  * allow specifying logging transports for more flexible logging
+
 0.7.1 / 2016-02-12
 ==================
 
