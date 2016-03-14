@@ -1,7 +1,7 @@
 import amqp from 'amqplib';
 import uuid from 'node-uuid';
 import sleep from './sleep';
-import logger from './logger';
+import createLogger from './logger';
 
 /**
  * Core Microwork class that provides a way to create new microservice
@@ -17,8 +17,11 @@ export class Microwork {
      * @example
      * const service = new Microwork({host: 'localhost', exchange: 'test.exchange'});
      */
-    constructor({host = 'localhost', exchange = 'microwork.default.exchange', reconnectTimeout = 5000}) {
-        logger.debug('construct with', host, exchange);
+    constructor({host = 'localhost', exchange = 'microwork.default.exchange', reconnectTimeout = 5000, loggerConfig}) {
+        // init logger
+        this.initLogger(loggerConfig);
+        // log
+        this.logger.debug('construct with', host, exchange);
         /**
          * Service unique ID
          * @type {string}
@@ -72,9 +75,31 @@ export class Microwork {
         this.connect().catch(this.tryReconnect.bind(this));
     }
 
+    /**
+     * Initialize logger with new options
+     * @param  {Object} opts   Logger options, see winston.js for reference
+     * @return {void}
+     * @private
+     */
+    initLogger(opts = {disableLogging: false, label: 'microwork'}) {
+        // init logger
+        // only show info in production mode
+        let level = opts.level || process.env.NODE_ENV === 'production' ? 'info' : 'debug';
+        // only show erros in test mode
+        /* istanbul ignore if  */
+        if (process.env.NODE_ENV === 'test') {
+            level = 'error';
+        }
+        /**
+         * Logger
+         * @private
+         */
+        this.logger = createLogger({level, ...opts});
+    }
+
     tryReconnect(e) {
         if (e.code === 'ECONNREFUSED' && !this.reconnect) {
-            logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(this.reconnectTimeout / 1000)}s...`);
+            this.logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(this.reconnectTimeout / 1000)}s...`);
             this.connecting = false;
             this.reconnect = setTimeout(() => {
                 this.reconnect = undefined;
@@ -82,7 +107,7 @@ export class Microwork {
             }, this.reconnectTimeout);
             return;
         }
-        logger.error('Error connecting:', e);
+        this.logger.error('Error connecting:', e);
         throw e;
     }
 
@@ -127,21 +152,21 @@ export class Microwork {
             return true;
         }
 
-        logger.debug('connecting...');
+        this.logger.debug('connecting...');
         // we're connecting
         this.connecting = true;
         // connect
         this.connection = await amqp.connect(`amqp://${this.host}`);
-        logger.debug('connected to rabbit');
+        this.logger.debug('connected to rabbit');
         // get two channels - receive and send
         this.channel = await this.connection.createChannel();
-        logger.debug('got channels');
+        this.logger.debug('got channels');
         // assing topic
         await this.channel.assertExchange(this.exchange, 'topic');
-        logger.debug('got exchanges');
+        this.logger.debug('got exchanges');
         // say we want to prefetch only 1 msg
         await this.channel.prefetch(1);
-        logger.debug('prefetch set');
+        this.logger.debug('prefetch set');
         // we're done connecting
         this.connecting = false;
     }
@@ -183,7 +208,7 @@ export class Microwork {
      */
     async stop() {
         if (!this.connection && this.reconnect) {
-            logger.debug('not connected, cleaning reconnect timeout');
+            this.logger.debug('not connected, cleaning reconnect timeout');
             clearTimeout(this.reconnect);
             return;
         }
@@ -211,7 +236,7 @@ export class Microwork {
         // wait for connection
         await this.connect();
         // send
-        logger.debug('sending to', topic, 'data:', data);
+        this.logger.debug('sending to', topic, 'data:', data);
         this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)), opts);
     }
 
@@ -271,12 +296,12 @@ export class Microwork {
         // wait for connection
         await this.connect();
         // get queue
-        logger.debug('adding worker for:', topic);
+        this.logger.debug('adding worker for:', topic);
         const {queue} = await this.channel.assertQueue(`microwork-${topic}-queue`, queueConfig);
         await this.channel.bindQueue(queue, this.exchange, topic);
-        logger.debug('bound queue...');
+        this.logger.debug('bound queue...');
         // consume if needed
-        logger.debug('initiating consuming...');
+        this.logger.debug('initiating consuming...');
         // listen for messages
         const {consumerTag} = await this.channel.consume(queue, data => {
             if (!data) {
@@ -301,7 +326,7 @@ export class Microwork {
             queue,
             consumerTag,
         });
-        logger.info('worker inited, consuming...');
+        this.logger.info('worker inited, consuming...');
         return consumerTag;
     }
 }
