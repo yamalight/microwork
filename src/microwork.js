@@ -1,5 +1,5 @@
 import amqp from 'amqplib';
-import uuid from 'node-uuid';
+import uuid from 'uuid';
 import sleep from './sleep';
 import createLogger from './logger';
 import winston from 'winston';
