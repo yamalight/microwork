@@ -1,4 +1,10 @@
 
+0.9.0 / 2016-11-23
+==================
+
+  * Upgrade dependencies to actual version
+  * Add yarn lock file
+
 0.8.0 / 2016-03-14
 ==================
 
