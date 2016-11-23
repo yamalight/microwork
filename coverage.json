@@ -1,0 +1,34 @@
+{
+  "coverage": "94.11%",
+  "expectCount": 17,
+  "actualCount": 16,
+  "files": {
+    "src/plugins/hardwarestat.js": {
+      "expectCount": 1,
+      "actualCount": 1,
+      "undocumentLines": []
+    },
+    "src/plugins/healthcheck.js": {
+      "expectCount": 1,
+      "actualCount": 1,
+      "undocumentLines": []
+    },
+    "src/microwork.js": {
+      "expectCount": 13,
+      "actualCount": 12,
+      "undocumentLines": [
+        108
+      ]
+    },
+    "src/plugins/substats.js": {
+      "expectCount": 1,
+      "actualCount": 1,
+      "undocumentLines": []
+    },
+    "src/sleep.js": {
+      "expectCount": 1,
+      "actualCount": 1,
+      "undocumentLines": []
+    }
+  }
+}

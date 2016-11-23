@@ -1,0 +1,272 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 97,
+  "loc": {
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "end": {
+      "line": 4,
+      "column": 0
+    }
+  },
+  "sourceType": "module",
+  "body": [
+    {
+      "type": "ImportDeclaration",
+      "start": 0,
+      "end": 30,
+      "loc": {
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 30
+        }
+      },
+      "specifiers": [
+        {
+          "type": "ImportDefaultSpecifier",
+          "start": 7,
+          "end": 14,
+          "loc": {
+            "start": {
+              "line": 1,
+              "column": 7
+            },
+            "end": {
+              "line": 1,
+              "column": 14
+            }
+          },
+          "local": {
+            "type": "Identifier",
+            "start": 7,
+            "end": 14,
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 7
+              },
+              "end": {
+                "line": 1,
+                "column": 14
+              }
+            },
+            "name": "winston"
+          }
+        }
+      ],
+      "importKind": "value",
+      "source": {
+        "type": "Literal",
+        "start": 20,
+        "end": 29,
+        "loc": {
+          "start": {
+            "line": 1,
+            "column": 20
+          },
+          "end": {
+            "line": 1,
+            "column": 29
+          }
+        },
+        "value": "winston",
+        "rawValue": "winston",
+        "raw": "'winston'"
+      }
+    },
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 32,
+      "end": 96,
+      "loc": {
+        "start": {
+          "line": 3,
+          "column": 0
+        },
+        "end": {
+          "line": 3,
+          "column": 64
+        }
+      },
+      "declaration": {
+        "type": "ArrowFunctionExpression",
+        "start": 47,
+        "end": 95,
+        "loc": {
+          "start": {
+            "line": 3,
+            "column": 15
+          },
+          "end": {
+            "line": 3,
+            "column": 63
+          }
+        },
+        "id": null,
+        "generator": false,
+        "expression": true,
+        "async": false,
+        "params": [
+          {
+            "type": "Identifier",
+            "start": 48,
+            "end": 58,
+            "loc": {
+              "start": {
+                "line": 3,
+                "column": 16
+              },
+              "end": {
+                "line": 3,
+                "column": 26
+              }
+            },
+            "name": "transports"
+          }
+        ],
+        "body": {
+          "type": "NewExpression",
+          "start": 63,
+          "end": 95,
+          "loc": {
+            "start": {
+              "line": 3,
+              "column": 31
+            },
+            "end": {
+              "line": 3,
+              "column": 63
+            }
+          },
+          "callee": {
+            "type": "MemberExpression",
+            "start": 67,
+            "end": 81,
+            "loc": {
+              "start": {
+                "line": 3,
+                "column": 35
+              },
+              "end": {
+                "line": 3,
+                "column": 49
+              }
+            },
+            "object": {
+              "type": "Identifier",
+              "start": 67,
+              "end": 74,
+              "loc": {
+                "start": {
+                  "line": 3,
+                  "column": 35
+                },
+                "end": {
+                  "line": 3,
+                  "column": 42
+                }
+              },
+              "name": "winston"
+            },
+            "property": {
+              "type": "Identifier",
+              "start": 75,
+              "end": 81,
+              "loc": {
+                "start": {
+                  "line": 3,
+                  "column": 43
+                },
+                "end": {
+                  "line": 3,
+                  "column": 49
+                }
+              },
+              "name": "Logger"
+            },
+            "computed": false
+          },
+          "arguments": [
+            {
+              "type": "ObjectExpression",
+              "start": 82,
+              "end": 94,
+              "loc": {
+                "start": {
+                  "line": 3,
+                  "column": 50
+                },
+                "end": {
+                  "line": 3,
+                  "column": 62
+                }
+              },
+              "properties": [
+                {
+                  "type": "Property",
+                  "start": 83,
+                  "end": 93,
+                  "loc": {
+                    "start": {
+                      "line": 3,
+                      "column": 51
+                    },
+                    "end": {
+                      "line": 3,
+                      "column": 61
+                    }
+                  },
+                  "method": false,
+                  "shorthand": true,
+                  "computed": false,
+                  "key": {
+                    "type": "Identifier",
+                    "start": 83,
+                    "end": 93,
+                    "loc": {
+                      "start": {
+                        "line": 3,
+                        "column": 51
+                      },
+                      "end": {
+                        "line": 3,
+                        "column": 61
+                      }
+                    },
+                    "name": "transports"
+                  },
+                  "kind": "init",
+                  "value": {
+                    "type": "Identifier",
+                    "start": 83,
+                    "end": 93,
+                    "loc": {
+                      "start": {
+                        "line": 3,
+                        "column": 51
+                      },
+                      "end": {
+                        "line": 3,
+                        "column": 61
+                      }
+                    },
+                    "name": "transports"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "leadingComments": [],
+        "trailingComments": []
+      }
+    }
+  ]
+}

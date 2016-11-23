@@ -1,0 +1,1656 @@
+[
+  {
+    "__docId__": 0,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/index.js",
+    "memberof": null,
+    "longname": "src/index.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import {Microwork} from './microwork';\n\nexport default Microwork;\n"
+  },
+  {
+    "__docId__": 1,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/logger.js",
+    "memberof": null,
+    "longname": "src/logger.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import winston from 'winston';\n\nexport default (transports) => new winston.Logger({transports});\n"
+  },
+  {
+    "__docId__": 2,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/microwork.js",
+    "memberof": null,
+    "longname": "src/microwork.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import amqp from 'amqplib';\nimport uuid from 'uuid';\nimport sleep from './sleep';\nimport createLogger from './logger';\nimport winston from 'winston';\n\n/**\n * Core Microwork class that provides a way to create new microservice\n */\nexport class Microwork {\n    /**\n     * Microwork class construct\n     * @param  {object} opts                    Microwork instance options\n     * @param  {string} opts.host               RabbitMQ host to use\n     * @param  {string} opts.exchange           RabbitMQ exchange to use\n     * @param  {Number} opts.reconnectTimeout   Timeout before trying to reconnect to RabbitMQ on failure\n     * @return {void}\n     * @example\n     * const service = new Microwork({host: 'localhost', exchange: 'test.exchange'});\n     */\n    constructor({\n        host = 'localhost',\n        exchange = 'microwork.default.exchange',\n        reconnectTimeout = 5000,\n        loggingTransports,\n    }) {\n        // init logger\n        this.initLogger(loggingTransports);\n        // log\n        this.logger.debug('construct with', host, exchange);\n        /**\n         * Service unique ID\n         * @type {string}\n         */\n        this.id = uuid.v4();\n        /**\n         * RabbitMQ host address\n         * @type {string}\n         */\n        this.host = host;\n        /**\n         * RabbitMQ exchange name\n         * @type {string}\n         */\n        this.exchange = exchange;\n        /**\n         * Active route handlers and queues\n         * @type {Object}\n         */\n        this.routeHandlers = {};\n        /**\n         * Connecting indicator\n         * @type {Boolean}\n         * @private\n         */\n        this.connecting = false;\n        /**\n         * Connection to RabbitMQ instance\n         * @type {Object}\n         * @private\n         */\n        this.connection = undefined;\n        /**\n         * Connection to RabbitMQ instance\n         * @type {Object}\n         * @private\n         */\n        this.channel = undefined;\n        /**\n         * Reconnect timeout reference\n         * @type {Number}\n         * @private\n         */\n        this.reconnect = undefined;\n        /**\n         * Reconnect timeout timer stored for later usage\n         * @type {Number}\n         */\n        this.reconnectTimeout = reconnectTimeout;\n        // init connection\n        this.connect().catch(this.tryReconnect.bind(this));\n    }\n\n    /**\n     * Initialize logger with new options\n     * @param  {Object} transports   Logger options, see winston.js for reference\n     * @return {void}\n     * @private\n     */\n    initLogger(transports = []) {\n        if (transports.length === 0) {\n            // only show info in production mode\n            let level = process.env.NODE_ENV === 'production' ? 'info' : 'debug';\n            // only show erros in test mode\n            /* istanbul ignore if  */\n            if (process.env.NODE_ENV === 'test') {\n                level = 'error';\n            }\n            transports.push(new winston.transports.Console({level}));\n        }\n        /**\n         * Logger\n         * @private\n         */\n        this.logger = createLogger(transports);\n    }\n\n    tryReconnect(e) {\n        if (e.code === 'ECONNREFUSED' && !this.reconnect) {\n            this.logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(this.reconnectTimeout / 1000)}s...`);\n            this.connecting = false;\n            this.reconnect = setTimeout(() => {\n                this.reconnect = undefined;\n                this.connect(true).catch(this.tryReconnect.bind(this));\n            }, this.reconnectTimeout);\n            return;\n        }\n        this.logger.error('Error connecting:', e);\n        throw e;\n    }\n\n    /**\n     * Register new Microwork plugin\n     * @param  {Object} plugin      Microwork plugin object\n     * @return {void}\n     * @example\n     * import myMicroworkPlugin from 'my-microwork-plugin';\n     * microworkInstance.registerPlugin(myMicroworkPlugin);\n     */\n    registerPlugin(plugin) {\n        for (const prop in plugin) {\n            // only apply non-existent properties\n            if (!this.hasOwnProperty(prop)) {\n                /**\n                 * New property from plugin\n                 * @private\n                 */\n                this[prop] = plugin[prop];\n            }\n        }\n    }\n\n    /**\n     * Initializes connection to RabbitMQ\n     * @param  {Boolean} calledFromTimer    Defines whether function was called from reconnect timer\n     * @return {Promise}                    Returns promise that can be awaited to ensure connection\n     * @private\n     */\n    async connect(calledFromTimer = false) {\n        // if not called from timer and reconnect pending - return self after delay\n        if (!calledFromTimer && this.reconnect) {\n            return sleep(this.reconnectTimeout).then(() => this.connect());\n        }\n        // if connecting, wait a bit, then return self\n        if (this.connecting) {\n            return sleep(50).then(() => this.connect());\n        }\n        // do not do anything if already connected\n        if (this.connection) {\n            return true;\n        }\n\n        this.logger.debug('connecting...');\n        // we're connecting\n        this.connecting = true;\n        // connect\n        this.connection = await amqp.connect(`amqp://${this.host}`);\n        this.logger.debug('connected to rabbit');\n        // get two channels - receive and send\n        this.channel = await this.connection.createChannel();\n        this.logger.debug('got channels');\n        // assing topic\n        await this.channel.assertExchange(this.exchange, 'topic');\n        this.logger.debug('got exchanges');\n        // say we want to prefetch only 1 msg\n        await this.channel.prefetch(1);\n        this.logger.debug('prefetch set');\n        // we're done connecting\n        this.connecting = false;\n    }\n\n    /**\n     * Removes existing subscription or worker.\n     * If consumerTag is given only corresponding subscription will be removed.\n     * Otherwise, all consumers for given topic will be terminated.\n     * @param  {string} topic         Topic to remove subscription/worker from\n     * @param  {string} consumerTag   Consumer tag to unsubscribe with\n     * @return {Promise} Returns promise that can be awaited to ensure removal\n     * @example <caption>Remove one subscription with consumerTag</caption>\n     * await microworkInstance.unsubscribe('test.topic', 'tag');\n     * @example <caption>Remove all subscriptions with topic</caption>\n     * await microworkInstance.unsubscribe('test.topic');\n     */\n    async unsubscribe(topic, consumerTag) {\n        // if we have consumerTag - only unsub from it\n        if (consumerTag) {\n            // find index\n            const subIndex = this.routeHandlers[topic].findIndex(it => it.consumerTag === consumerTag);\n            // cancel consuming\n            await this.channel.cancel(consumerTag);\n            // remove from subs\n            this.routeHandlers[topic].splice(subIndex, 1);\n            return;\n        }\n        // cancel consuming\n        await Promise.all(this.routeHandlers[topic].map(it => this.channel.cancel(it.consumerTag)));\n        // remove whole topic\n        delete this.routeHandlers[topic];\n    }\n\n    /**\n     * Stops the service, closes all workers/subscriptions and terminates the connection to RabbitMQ\n     * @return {Promise} Returns promise that can be awaited to ensure termination\n     * @example\n     * await microworkInstance.stop();\n     */\n    async stop() {\n        if (!this.connection && this.reconnect) {\n            this.logger.debug('not connected, cleaning reconnect timeout');\n            clearTimeout(this.reconnect);\n            return;\n        }\n        // cleanup queues and routes if any are present\n        const paths = Object.keys(this.routeHandlers);\n        if (paths.length) {\n            await Promise.all(paths.map(path => this.unsubscribe(path)));\n        }\n        // close channel & connection\n        await this.channel.close();\n        await this.connection.close();\n    }\n\n    /**\n     * Send given data to the specified topic\n     * @param  {string} topic Topic to send data to\n     * @param  {Any}    data  Data to send\n     * @param  {Object} opts  Publish options for RabbitMQ\n     * @return {Promise}      Returns promise that can be awaited to ensure termination\n     * @example\n     * await microworkInstance.send('test.topic', 'test');\n     * await microworkInstance.send('test.topic', {json: 'works too'});\n     */\n    async send(topic, data = '', opts = {}) {\n        // wait for connection\n        await this.connect();\n        // send\n        this.logger.debug('sending to', topic, 'data:', data);\n        this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)), opts);\n    }\n\n    /**\n     * Create subscription to given topic that will pass all incoming messages to given handler\n     * @param  {string}   topic          Topic to subscribe to\n     * @param  {Function} handler        Handler function that will get all incoming messages\n     * @param  {Object}   queueConfig    Queue config to pass to RabbitMQ\n     * @param  {Object}   consumeConfig  Consume config to pass to RabbitMQ\n     * @param  {Object}   config         Config for subscriber (e.g. wether to auto-ack messages)\n     * @return {string}                  Consumer tag that can be used for more precise unsubscribe action\n     * @example <caption>Simple subscribe usage</caption>\n     * await microworkInstance.subscribe('test.topic', (msg, reply) => {\n     * \tif (msg === 'ping') {\n     * \t\treply('test.reply', 'pong');\n     * \t}\n     * });\n     * @example <caption>Subscribe with custom RabbitMQ options</caption>\n     * await microworkInstance.subscribe('test.topic', (msg, reply) => {\n     * \tif (msg === 'ping') {\n     * \t\treply('test.reply', 'pong');\n     * \t}\n     * }, {durable: true, autoDelete: true, exclusive: true});\n     * @example <caption>Subscribe without auto-ack</caption>\n     * await microworkInstance.subscribe('test.topic', (msg, reply, ack, nack) => {\n     * \tif (msg === 'ping') {\n     * \t\tack();\n     * \t\treply('test.reply', 'pong');\n     * \t} else {\n     * \t\tnack();\n     * \t}\n     * }, {}, {}, {ack: false});\n     */\n    async subscribe(\n        topic,\n        handler,\n        queueConfig = {},\n        consumeConfig = {},\n        config = {}\n    ) {\n        // merge queueConfig with defaults\n        queueConfig = {\n            durable: true,\n            autoDelete: true,\n            ...queueConfig,\n        };\n        // merge consumeConfig with defaults\n        consumeConfig = {\n            noAck: false,\n            ...consumeConfig,\n        };\n        // merge config with defaults\n        config = {\n            ack: true,\n            ...config,\n        };\n        // wait for connection\n        await this.connect();\n        // get queue\n        this.logger.debug('adding worker for:', topic);\n        const {queue} = await this.channel.assertQueue(`microwork-${topic}-queue`, queueConfig);\n        await this.channel.bindQueue(queue, this.exchange, topic);\n        this.logger.debug('bound queue...');\n        // consume if needed\n        this.logger.debug('initiating consuming...');\n        // listen for messages\n        const {consumerTag} = await this.channel.consume(queue, data => {\n            if (!data) {\n                return;\n            }\n            const msg = JSON.parse(data.content.toString());\n            // ack\n            if (config.ack) {\n                this.channel.ack(data);\n            }\n            // pass to handler\n            const reply = this.send.bind(this);\n            const ack = this.channel.ack.bind(this.channel, data);\n            const nack = this.channel.nack.bind(this.channel, data);\n            handler(msg, reply, ack, nack);\n        }, consumeConfig);\n        // push to cleanup\n        if (!this.routeHandlers[topic]) {\n            this.routeHandlers[topic] = [];\n        }\n        this.routeHandlers[topic].push({\n            queue,\n            consumerTag,\n        });\n        this.logger.info('worker inited, consuming...');\n        return consumerTag;\n    }\n}\n"
+  },
+  {
+    "__docId__": 3,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Microwork",
+    "memberof": "src/microwork.js",
+    "longname": "src/microwork.js~Microwork",
+    "access": null,
+    "export": true,
+    "importPath": "microwork/src/microwork.js",
+    "importStyle": "{Microwork}",
+    "description": "Core Microwork class that provides a way to create new microservice",
+    "lineNumber": 10,
+    "interface": false
+  },
+  {
+    "__docId__": 4,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#constructor",
+    "access": null,
+    "description": "Microwork class construct",
+    "examples": [
+      "const service = new Microwork({host: 'localhost', exchange: 'test.exchange'});"
+    ],
+    "lineNumber": 21,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "opts",
+        "description": "Microwork instance options"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "opts.host",
+        "description": "RabbitMQ host to use"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "opts.exchange",
+        "description": "RabbitMQ exchange to use"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "opts.reconnectTimeout",
+        "description": "Timeout before trying to reconnect to RabbitMQ on failure"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "void"
+      ],
+      "spread": false,
+      "description": ""
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 5,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "id",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#id",
+    "access": null,
+    "description": "Service unique ID",
+    "lineNumber": 35,
+    "type": {
+      "nullable": null,
+      "types": [
+        "string"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 6,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "host",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#host",
+    "access": null,
+    "description": "RabbitMQ host address",
+    "lineNumber": 40,
+    "type": {
+      "nullable": null,
+      "types": [
+        "string"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 7,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "exchange",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#exchange",
+    "access": null,
+    "description": "RabbitMQ exchange name",
+    "lineNumber": 45,
+    "type": {
+      "nullable": null,
+      "types": [
+        "string"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 8,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "routeHandlers",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#routeHandlers",
+    "access": null,
+    "description": "Active route handlers and queues",
+    "lineNumber": 50,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 9,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "connecting",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connecting",
+    "access": "private",
+    "description": "Connecting indicator",
+    "lineNumber": 56,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Boolean"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 10,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "connection",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connection",
+    "access": "private",
+    "description": "Connection to RabbitMQ instance",
+    "lineNumber": 62,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 11,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "channel",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#channel",
+    "access": "private",
+    "description": "Connection to RabbitMQ instance",
+    "lineNumber": 68,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 12,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "reconnect",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#reconnect",
+    "access": "private",
+    "description": "Reconnect timeout reference",
+    "lineNumber": 74,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Number"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 13,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "reconnectTimeout",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#reconnectTimeout",
+    "access": null,
+    "description": "Reconnect timeout timer stored for later usage",
+    "lineNumber": 79,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Number"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 14,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "initLogger",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#initLogger",
+    "access": "private",
+    "description": "Initialize logger with new options",
+    "lineNumber": 90,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "transports",
+        "description": "Logger options, see winston.js for reference"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "void"
+      ],
+      "spread": false,
+      "description": ""
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 15,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "logger",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#logger",
+    "access": "private",
+    "description": "Logger",
+    "lineNumber": 105,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 16,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "tryReconnect",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#tryReconnect",
+    "access": null,
+    "description": null,
+    "lineNumber": 108,
+    "undocument": true,
+    "params": [
+      {
+        "name": "e",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 17,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "connecting",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connecting",
+    "access": null,
+    "description": null,
+    "lineNumber": 111,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 18,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "reconnect",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#reconnect",
+    "access": null,
+    "description": null,
+    "lineNumber": 112,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 19,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "reconnect",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#reconnect",
+    "access": null,
+    "description": null,
+    "lineNumber": 113,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 20,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "registerPlugin",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#registerPlugin",
+    "access": null,
+    "description": "Register new Microwork plugin",
+    "examples": [
+      "import myMicroworkPlugin from 'my-microwork-plugin';\nmicroworkInstance.registerPlugin(myMicroworkPlugin);"
+    ],
+    "lineNumber": 130,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "plugin",
+        "description": "Microwork plugin object"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "void"
+      ],
+      "spread": false,
+      "description": ""
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 21,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "connect",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connect",
+    "access": "private",
+    "description": "Initializes connection to RabbitMQ",
+    "lineNumber": 149,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Boolean"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "calledFromTimer",
+        "description": "Defines whether function was called from reconnect timer"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Promise"
+      ],
+      "spread": false,
+      "description": "Returns promise that can be awaited to ensure connection"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 22,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "connecting",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connecting",
+    "access": null,
+    "description": null,
+    "lineNumber": 165,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 23,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "connection",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connection",
+    "access": null,
+    "description": null,
+    "lineNumber": 167,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 24,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "channel",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#channel",
+    "access": null,
+    "description": null,
+    "lineNumber": 170,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 25,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "connecting",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#connecting",
+    "access": null,
+    "description": null,
+    "lineNumber": 179,
+    "undocument": true,
+    "type": {
+      "types": [
+        "boolean"
+      ]
+    }
+  },
+  {
+    "__docId__": 26,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "unsubscribe",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#unsubscribe",
+    "access": null,
+    "description": "Removes existing subscription or worker.\nIf consumerTag is given only corresponding subscription will be removed.\nOtherwise, all consumers for given topic will be terminated.",
+    "examples": [
+      "<caption>Remove one subscription with consumerTag</caption>\nawait microworkInstance.unsubscribe('test.topic', 'tag');",
+      "<caption>Remove all subscriptions with topic</caption>\nawait microworkInstance.unsubscribe('test.topic');"
+    ],
+    "lineNumber": 194,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "topic",
+        "description": "Topic to remove subscription/worker from"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "consumerTag",
+        "description": "Consumer tag to unsubscribe with"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Promise"
+      ],
+      "spread": false,
+      "description": "Returns promise that can be awaited to ensure removal"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 27,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "stop",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#stop",
+    "access": null,
+    "description": "Stops the service, closes all workers/subscriptions and terminates the connection to RabbitMQ",
+    "examples": [
+      "await microworkInstance.stop();"
+    ],
+    "lineNumber": 217,
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Promise"
+      ],
+      "spread": false,
+      "description": "Returns promise that can be awaited to ensure termination"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 28,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "send",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#send",
+    "access": null,
+    "description": "Send given data to the specified topic",
+    "examples": [
+      "await microworkInstance.send('test.topic', 'test');\nawait microworkInstance.send('test.topic', {json: 'works too'});"
+    ],
+    "lineNumber": 243,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "topic",
+        "description": "Topic to send data to"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "data",
+        "description": "Data to send"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "opts",
+        "description": "Publish options for RabbitMQ"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Promise"
+      ],
+      "spread": false,
+      "description": "Returns promise that can be awaited to ensure termination"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 29,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "subscribe",
+    "memberof": "src/microwork.js~Microwork",
+    "longname": "src/microwork.js~Microwork#subscribe",
+    "access": null,
+    "description": "Create subscription to given topic that will pass all incoming messages to given handler",
+    "examples": [
+      "<caption>Simple subscribe usage</caption>\nawait microworkInstance.subscribe('test.topic', (msg, reply) => {\n\tif (msg === 'ping') {\n\t\treply('test.reply', 'pong');\n\t}\n});",
+      "<caption>Subscribe with custom RabbitMQ options</caption>\nawait microworkInstance.subscribe('test.topic', (msg, reply) => {\n\tif (msg === 'ping') {\n\t\treply('test.reply', 'pong');\n\t}\n}, {durable: true, autoDelete: true, exclusive: true});",
+      "<caption>Subscribe without auto-ack</caption>\nawait microworkInstance.subscribe('test.topic', (msg, reply, ack, nack) => {\n\tif (msg === 'ping') {\n\t\tack();\n\t\treply('test.reply', 'pong');\n\t} else {\n\t\tnack();\n\t}\n}, {}, {}, {ack: false});"
+    ],
+    "lineNumber": 281,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "topic",
+        "description": "Topic to subscribe to"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Function"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "handler",
+        "description": "Handler function that will get all incoming messages"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "queueConfig",
+        "description": "Queue config to pass to RabbitMQ"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "consumeConfig",
+        "description": "Consume config to pass to RabbitMQ"
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "config",
+        "description": "Config for subscriber (e.g. wether to auto-ack messages)"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "string"
+      ],
+      "spread": false,
+      "description": "Consumer tag that can be used for more precise unsubscribe action"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 30,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/plugins/hardwarestat.js",
+    "memberof": null,
+    "longname": "src/plugins/hardwarestat.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import os from 'os';\n\n/**\n * Hardware stats plugin\n * @type {Object}\n */\nconst HardwareStat = {\n    /**\n     * Reference to hardware autoreport interval\n     * @type {Number}\n     * @private\n     */\n    hardwareReportIntervalRef: null,\n    /**\n     * Interval to send hardware report messages\n     * @type {Number}\n     */\n    hardwareReportInterval: 60000,\n\n    /**\n     * Gets CPU stats\n     * @return {Object} CPU stats (number of CPUs and average load)\n     * @private\n     */\n    cpuStat() {\n        const cpus = os.cpus(); // get cores count\n        const load = os.loadavg(); // get average\n        return {\n            cpus: cpus.length,\n            load,\n        };\n    },\n\n    /**\n     * Gets memory stats\n     * @return {Object} Memory stats (used, free, total mem in bytes)\n     * @private\n     */\n    memStat() {\n        const total = os.totalmem();\n        const free = os.freemem();\n        return {\n            used: total - free,\n            free,\n            total,\n        };\n    },\n\n    /**\n     * Gets all hardware stats\n     * @return {Object} Hardware stats\n     * @private\n     */\n    hwStat() {\n        return {\n            cpu: this.cpuStat(),\n            mem: this.memStat(),\n        };\n    },\n\n    /**\n     * Sends hardware report message\n     * @return {void}\n     */\n    reportHardwareStats() {\n        this.send('microwork.node.status', this.hwStat(), {expiration: this.hardwareReportInterval});\n    },\n\n    /**\n     * Inits autoreport of hardware stats, will dispatch messages using given interval\n     * @return {void}\n     */\n    autoreportHardwareStats() {\n        this.stopAutoreportHardwareStats();\n        this.hardwareReportIntervalRef = setInterval(() => this.reportHardwareStats(), this.hardwareReportInterval);\n    },\n\n    /**\n     * Stops autoreporting hardware stats\n     * @return {void}\n     */\n    stopAutoreportHardwareStats() {\n        if (this.hardwareReportIntervalRef) {\n            clearInterval(this.hardwareReportIntervalRef);\n            delete this.hardwareReportIntervalRef;\n        }\n    },\n};\n\nexport default HardwareStat;\n"
+  },
+  {
+    "__docId__": 31,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "HardwareStat",
+    "memberof": "src/plugins/hardwarestat.js",
+    "longname": "src/plugins/hardwarestat.js~HardwareStat",
+    "access": null,
+    "export": true,
+    "importPath": "microwork/src/plugins/hardwarestat.js",
+    "importStyle": "HardwareStat",
+    "description": "Hardware stats plugin",
+    "lineNumber": 7,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 32,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/plugins/healthcheck.js",
+    "memberof": null,
+    "longname": "src/plugins/healthcheck.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "/**\n * Health check plugin\n * @type {Object}\n */\nconst HealthCheck = {\n    /**\n     * Reference to autoreport interval\n     * @type {Number}\n     * @private\n     */\n    healthchecksReportIntervalRef: null,\n    /**\n     * Interval to send keep-alive messages\n     * @type {Number}\n     */\n    healthchecksReportInterval: 30000,\n\n    /**\n     * Sends keep-alive message\n     * @return {void}\n     */\n    reportHealth() {\n        this.send('microwork.node.alive', this.id, {expiration: this.healthchecksReportInterval});\n    },\n\n    /**\n     * Inits autoreport of health, will dispatch keep-alive messages using given interval\n     * @return {void}\n     */\n    autoreportHealth() {\n        this.stopAutoreportHealth();\n        this.healthchecksReportIntervalRef = setInterval(() => this.reportHealth(), this.healthchecksReportInterval);\n    },\n\n    /**\n     * Stops autoreporting health\n     * @return {void}\n     */\n    stopAutoreportHealth() {\n        if (this.healthchecksReportIntervalRef) {\n            clearInterval(this.healthchecksReportIntervalRef);\n            delete this.healthchecksReportIntervalRef;\n        }\n    },\n};\n\nexport default HealthCheck;\n"
+  },
+  {
+    "__docId__": 33,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "HealthCheck",
+    "memberof": "src/plugins/healthcheck.js",
+    "longname": "src/plugins/healthcheck.js~HealthCheck",
+    "access": null,
+    "export": true,
+    "importPath": "microwork/src/plugins/healthcheck.js",
+    "importStyle": "HealthCheck",
+    "description": "Health check plugin",
+    "lineNumber": 5,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 34,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/plugins/substats.js",
+    "memberof": null,
+    "longname": "src/plugins/substats.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "/**\n * Subscriber stats plugin\n * @type {Object}\n */\nconst SubscriberStats = {\n    /**\n     * Expiration time for subscribers stat message for RabbitMQ\n     * @type {Number}\n     */\n    subscriberStatsExpiration: 60000,\n\n    /**\n     * Creates and sends report on current subscribers to RabbitMQ\n     * @return {[type]} [description]\n     */\n    reportSubscribers() {\n        const subscribers = Object.keys(this.routeHandlers)\n            .map(key => ({\n                topic: key,\n                subscribers: this.routeHandlers[key].length,\n            }));\n        const stat = {\n            id: this.id,\n            subscribers,\n        };\n        this.send('microwork.node.subscribers', stat, {expiration: this.subscriberStatsExpiration});\n    },\n\n    /**\n     * Initializes listener for requests for subscribers stats\n     * @return {void}\n     */\n    initSubscribersReporting() {\n        this.subscribe('microwork.node.report.subscribers', () => this.reportSubscribers());\n    },\n};\n\nexport default SubscriberStats;\n"
+  },
+  {
+    "__docId__": 35,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "SubscriberStats",
+    "memberof": "src/plugins/substats.js",
+    "longname": "src/plugins/substats.js~SubscriberStats",
+    "access": null,
+    "export": true,
+    "importPath": "microwork/src/plugins/substats.js",
+    "importStyle": "SubscriberStats",
+    "description": "Subscriber stats plugin",
+    "lineNumber": 5,
+    "type": {
+      "nullable": null,
+      "types": [
+        "Object"
+      ],
+      "spread": false,
+      "description": null
+    }
+  },
+  {
+    "__docId__": 36,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/sleep.js",
+    "memberof": null,
+    "longname": "src/sleep.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "/**\n * Sleep function that returns a promise that will be resolved after given delay\n * @param  {Number} delay Delay in milliseconds\n * @return {Promise}      Promise that will be resolved after delay\n * @example <caption>Promises example</caption>\n * doSomeThings()\n * \t.then(() => sleep(100))\n * \t.then(() => doOtherThings());\n * @example <caption>Async/await example</caption>\n * await doSomeThings();\n * await sleep(100);\n * await doOtherThings();\n */\nconst sleep = (delay) => new Promise(resolve => setTimeout(() => resolve(), delay));\n\nexport default sleep;\n"
+  },
+  {
+    "__docId__": 37,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "sleep",
+    "memberof": "src/sleep.js",
+    "longname": "src/sleep.js~sleep",
+    "access": null,
+    "export": true,
+    "importPath": "microwork/src/sleep.js",
+    "importStyle": "sleep",
+    "description": "Sleep function that returns a promise that will be resolved after given delay",
+    "examples": [
+      "<caption>Promises example</caption>\ndoSomeThings()\n\t.then(() => sleep(100))\n\t.then(() => doOtherThings());",
+      "<caption>Async/await example</caption>\nawait doSomeThings();\nawait sleep(100);\nawait doOtherThings();"
+    ],
+    "lineNumber": 14,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Number"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "delay",
+        "description": "Delay in milliseconds"
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Promise"
+      ],
+      "spread": false,
+      "description": "Promise that will be resolved after delay"
+    },
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 39,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Infinity",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Infinity",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 40,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NaN",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~NaN",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 41,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "undefined",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~undefined",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 42,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "null",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~null",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 43,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 44,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 45,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 46,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 47,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 48,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 49,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Symbol",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Symbol",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 50,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Error",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Error",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 51,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "EvalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/EvalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~EvalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 52,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "InternalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/InternalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~InternalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 53,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RangeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RangeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 54,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ReferenceError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ReferenceError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 55,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "SyntaxError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~SyntaxError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 56,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "TypeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~TypeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 57,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "URIError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/URIError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~URIError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 58,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 59,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 60,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Date",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Date",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 61,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "String",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~String",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 62,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "string",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~string",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 63,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RegExp",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RegExp",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 64,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 65,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 66,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 67,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8ClampedArray",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8ClampedArray",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 68,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 69,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 70,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 71,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 72,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 73,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float64Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float64Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 74,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Map",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Map",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 75,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Set",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Set",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 76,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakMap",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakMap",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 77,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakSet",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakSet",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 78,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ArrayBuffer",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ArrayBuffer",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 79,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DataView",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~DataView",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 80,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "JSON",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~JSON",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 81,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Promise",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Promise",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 82,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Generator",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Generator",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 83,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "GeneratorFunction",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~GeneratorFunction",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 84,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Reflect",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Reflect",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 85,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Proxy",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Proxy",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 87,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "CanvasRenderingContext2D",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~CanvasRenderingContext2D",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 88,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DocumentFragment",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~DocumentFragment",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 89,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Element",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Element",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Element",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 90,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Event",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Event",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Event",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 91,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Node",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Node",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Node",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 92,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NodeList",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/NodeList",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~NodeList",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 93,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "XMLHttpRequest",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~XMLHttpRequest",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 94,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "AudioContext",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/AudioContext",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~AudioContext",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  }
+]

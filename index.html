@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl">
+  <title data-ice="title">API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+  <script src="script/manual.js"></script>
+</head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  
+  <a data-ice="repoURL" href="https://github.com/yamalight/microwork.git" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/microwork.js~Microwork.html">Microwork</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-sleep">sleep</a></span></span></li>
+<li data-ice="doc"><div data-ice="dirPath" class="nav-dir-path">plugins</div><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-HardwareStat">HardwareStat</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-HealthCheck">HealthCheck</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-variable">V</span><span data-ice="name"><span><a href="variable/index.html#static-variable-SubscriberStats">SubscriberStats</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><div data-ice="index" class="github-markdown"><h1 id="microwork-js">Microwork.js</h1>
+<p><a href="https://www.npmjs.com/package/microwork"><img src="https://img.shields.io/npm/v/microwork.svg" alt="npm"></a>
+<a href="http://opensource.org/licenses/MIT"><img src="https://img.shields.io/npm/l/microwork.svg" alt="MIT"></a>
+<a href="https://travis-ci.org/yamalight/microwork"><img src="https://travis-ci.org/yamalight/microwork.svg?branch=master" alt="Build Status"></a>
+<a href="https://www.bithound.io/github/yamalight/microwork"><img src="https://www.bithound.io/github/yamalight/microwork/badges/score.svg" alt="bitHound Overall Score"></a>
+<a href="https://coveralls.io/github/yamalight/microwork?branch=master"><img src="https://coveralls.io/repos/github/yamalight/microwork/badge.svg?branch=master" alt="Coverage Status"></a>
+<a href="http://yamalight.github.io/microwork/"><img src="https://img.shields.io/badge/code-docs-blue.svg" alt="Code docs"></a></p>
+<p>Microwork.js is a library for simple creation of distributed scalable microservices in node.js with RabbitMQ.</p>
+<h1 id="installation">Installation</h1>
+<pre><code class="lang-sh"><code class="source-code prettyprint">npm install --save microwork</code>
+</code></pre>
+<h1 id="requirements">Requirements</h1>
+<p>Since Microwork.js is written in ES6, it uses <a href="https://babeljs.io/">babel</a> to compile the code before publishing. Currently we&apos;re using <a href="https://github.com/rtsao/babel-preset-es2015-node">es2015-node</a> babel preset that only works in latest stable node (4.x or later).</p>
+<h1 id="features">Features</h1>
+<ul>
+<li>Simple interface for building distributed (micro)services</li>
+<li>Easy way to scale services both horizontally (by adding more nodes) and vertically (by adding more subscribers)</li>
+<li>Extensible with <a href="docs/Plugins.md">plugins</a></li>
+</ul>
+<h1 id="usage">Usage</h1>
+<h2 id="quick-start">Quick start</h2>
+<p>Example service that subscribe to messages from <code>do.work</code> topic and does some work with incoming data (in this case it just appends <code>world!</code> to incoming string):</p>
+<pre><code class="lang-js"><code class="source-code prettyprint">import Microwork from &apos;microwork&apos;;
+
+// create task runner
+const runner = new Microwork({host: &apos;your.rabbit.host&apos;, exchange: &apos;your.exchange&apos;});
+// add worker to specific topic
+await runner.subscribe(&apos;do.work&apos;, (msg, reply) =&gt; {
+    reply(&apos;response.topic&apos;, msg + &apos; world!&apos;);
+});
+// after work is done - cleanup
+await runner.stop();</code>
+</code></pre>
+<p>Example service that subscribes to messages from <code>response.topic</code> and logs them to console, as well as sends processing request to previously defined service:</p>
+<pre><code class="lang-js"><code class="source-code prettyprint">import Microwork from &apos;microwork&apos;;
+
+// create master
+const master = new Microwork({host: &apos;your.rabbit.host&apos;, exchange: &apos;your.exchange&apos;});
+// listen for reply from workers
+await master.subscribe(&apos;response.topic&apos;, (msg) =&gt; {
+    console.log(msg); // -&gt; &quot;hello world!&quot;
+});
+// send message to workers
+await master.send(&apos;do.work&apos;, &apos;hello&apos;);
+
+// after work is done - cleanup
+await master.stop();</code>
+</code></pre>
+<p>For more examples see project <a href="docs/README.md">documentation</a>.</p>
+<h2 id="license">License</h2>
+<p><a href="http://www.opensource.org/licenses/mit-license">MIT</a></p>
+</div>
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.4.8)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

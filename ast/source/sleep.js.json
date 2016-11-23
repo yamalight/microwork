@@ -1,0 +1,611 @@
+{
+  "type": "Program",
+  "start": 0,
+  "end": 564,
+  "loc": {
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "end": {
+      "line": 17,
+      "column": 0
+    }
+  },
+  "sourceType": "module",
+  "body": [
+    {
+      "type": "Identifier",
+      "start": 456,
+      "end": 540,
+      "loc": {
+        "start": {
+          "line": 14,
+          "column": 0
+        },
+        "end": {
+          "line": 14,
+          "column": 84
+        }
+      },
+      "declarations": [
+        {
+          "type": "VariableDeclarator",
+          "start": 462,
+          "end": 539,
+          "loc": {
+            "start": {
+              "line": 14,
+              "column": 6
+            },
+            "end": {
+              "line": 14,
+              "column": 83
+            }
+          },
+          "id": {
+            "type": "Identifier",
+            "start": 462,
+            "end": 467,
+            "loc": {
+              "start": {
+                "line": 14,
+                "column": 6
+              },
+              "end": {
+                "line": 14,
+                "column": 11
+              }
+            },
+            "name": "sleep",
+            "leadingComments": null
+          },
+          "init": {
+            "type": "ArrowFunctionExpression",
+            "start": 470,
+            "end": 539,
+            "loc": {
+              "start": {
+                "line": 14,
+                "column": 14
+              },
+              "end": {
+                "line": 14,
+                "column": 83
+              }
+            },
+            "id": null,
+            "generator": false,
+            "expression": true,
+            "async": false,
+            "params": [
+              {
+                "type": "Identifier",
+                "start": 471,
+                "end": 476,
+                "loc": {
+                  "start": {
+                    "line": 14,
+                    "column": 15
+                  },
+                  "end": {
+                    "line": 14,
+                    "column": 20
+                  }
+                },
+                "name": "delay"
+              }
+            ],
+            "body": {
+              "type": "NewExpression",
+              "start": 481,
+              "end": 539,
+              "loc": {
+                "start": {
+                  "line": 14,
+                  "column": 25
+                },
+                "end": {
+                  "line": 14,
+                  "column": 83
+                }
+              },
+              "callee": {
+                "type": "Identifier",
+                "start": 485,
+                "end": 492,
+                "loc": {
+                  "start": {
+                    "line": 14,
+                    "column": 29
+                  },
+                  "end": {
+                    "line": 14,
+                    "column": 36
+                  }
+                },
+                "name": "Promise"
+              },
+              "arguments": [
+                {
+                  "type": "ArrowFunctionExpression",
+                  "start": 493,
+                  "end": 538,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 37
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 82
+                    }
+                  },
+                  "id": null,
+                  "generator": false,
+                  "expression": true,
+                  "async": false,
+                  "params": [
+                    {
+                      "type": "Identifier",
+                      "start": 493,
+                      "end": 500,
+                      "loc": {
+                        "start": {
+                          "line": 14,
+                          "column": 37
+                        },
+                        "end": {
+                          "line": 14,
+                          "column": 44
+                        }
+                      },
+                      "name": "resolve"
+                    }
+                  ],
+                  "body": {
+                    "type": "CallExpression",
+                    "start": 504,
+                    "end": 538,
+                    "loc": {
+                      "start": {
+                        "line": 14,
+                        "column": 48
+                      },
+                      "end": {
+                        "line": 14,
+                        "column": 82
+                      }
+                    },
+                    "callee": {
+                      "type": "Identifier",
+                      "start": 504,
+                      "end": 514,
+                      "loc": {
+                        "start": {
+                          "line": 14,
+                          "column": 48
+                        },
+                        "end": {
+                          "line": 14,
+                          "column": 58
+                        }
+                      },
+                      "name": "setTimeout"
+                    },
+                    "arguments": [
+                      {
+                        "type": "ArrowFunctionExpression",
+                        "start": 515,
+                        "end": 530,
+                        "loc": {
+                          "start": {
+                            "line": 14,
+                            "column": 59
+                          },
+                          "end": {
+                            "line": 14,
+                            "column": 74
+                          }
+                        },
+                        "id": null,
+                        "generator": false,
+                        "expression": true,
+                        "async": false,
+                        "params": [],
+                        "body": {
+                          "type": "CallExpression",
+                          "start": 521,
+                          "end": 530,
+                          "loc": {
+                            "start": {
+                              "line": 14,
+                              "column": 65
+                            },
+                            "end": {
+                              "line": 14,
+                              "column": 74
+                            }
+                          },
+                          "callee": {
+                            "type": "Identifier",
+                            "start": 521,
+                            "end": 528,
+                            "loc": {
+                              "start": {
+                                "line": 14,
+                                "column": 65
+                              },
+                              "end": {
+                                "line": 14,
+                                "column": 72
+                              }
+                            },
+                            "name": "resolve"
+                          },
+                          "arguments": []
+                        }
+                      },
+                      {
+                        "type": "Identifier",
+                        "start": 532,
+                        "end": 537,
+                        "loc": {
+                          "start": {
+                            "line": 14,
+                            "column": 76
+                          },
+                          "end": {
+                            "line": 14,
+                            "column": 81
+                          }
+                        },
+                        "name": "delay"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "leadingComments": null
+        }
+      ],
+      "kind": "const",
+      "leadingComments": [],
+      "name": "_",
+      "trailingComments": []
+    },
+    {
+      "type": "Identifier",
+      "start": 542,
+      "end": 563,
+      "loc": {
+        "start": {
+          "line": 16,
+          "column": 0
+        },
+        "end": {
+          "line": 16,
+          "column": 21
+        }
+      },
+      "declaration": {
+        "type": "Identifier",
+        "start": 557,
+        "end": 562,
+        "loc": {
+          "start": {
+            "line": 16,
+            "column": 15
+          },
+          "end": {
+            "line": 16,
+            "column": 20
+          }
+        },
+        "name": "sleep"
+      },
+      "name": "_",
+      "leadingComments": [],
+      "trailingComments": []
+    },
+    {
+      "type": "ExportDefaultDeclaration",
+      "start": 542,
+      "end": 563,
+      "loc": {
+        "start": {
+          "line": 16,
+          "column": 0
+        },
+        "end": {
+          "line": 16,
+          "column": 21
+        }
+      },
+      "declaration": {
+        "type": "VariableDeclaration",
+        "start": 456,
+        "end": 540,
+        "loc": {
+          "start": {
+            "line": 14,
+            "column": 0
+          },
+          "end": {
+            "line": 14,
+            "column": 84
+          }
+        },
+        "declarations": [
+          {
+            "type": "VariableDeclarator",
+            "start": 462,
+            "end": 539,
+            "loc": {
+              "start": {
+                "line": 14,
+                "column": 6
+              },
+              "end": {
+                "line": 14,
+                "column": 83
+              }
+            },
+            "id": {
+              "type": "Identifier",
+              "start": 462,
+              "end": 467,
+              "loc": {
+                "start": {
+                  "line": 14,
+                  "column": 6
+                },
+                "end": {
+                  "line": 14,
+                  "column": 11
+                }
+              },
+              "name": "sleep",
+              "leadingComments": null
+            },
+            "init": {
+              "type": "ArrowFunctionExpression",
+              "start": 470,
+              "end": 539,
+              "loc": {
+                "start": {
+                  "line": 14,
+                  "column": 14
+                },
+                "end": {
+                  "line": 14,
+                  "column": 83
+                }
+              },
+              "id": null,
+              "generator": false,
+              "expression": true,
+              "async": false,
+              "params": [
+                {
+                  "type": "Identifier",
+                  "start": 471,
+                  "end": 476,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 15
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 20
+                    }
+                  },
+                  "name": "delay"
+                }
+              ],
+              "body": {
+                "type": "NewExpression",
+                "start": 481,
+                "end": 539,
+                "loc": {
+                  "start": {
+                    "line": 14,
+                    "column": 25
+                  },
+                  "end": {
+                    "line": 14,
+                    "column": 83
+                  }
+                },
+                "callee": {
+                  "type": "Identifier",
+                  "start": 485,
+                  "end": 492,
+                  "loc": {
+                    "start": {
+                      "line": 14,
+                      "column": 29
+                    },
+                    "end": {
+                      "line": 14,
+                      "column": 36
+                    }
+                  },
+                  "name": "Promise"
+                },
+                "arguments": [
+                  {
+                    "type": "ArrowFunctionExpression",
+                    "start": 493,
+                    "end": 538,
+                    "loc": {
+                      "start": {
+                        "line": 14,
+                        "column": 37
+                      },
+                      "end": {
+                        "line": 14,
+                        "column": 82
+                      }
+                    },
+                    "id": null,
+                    "generator": false,
+                    "expression": true,
+                    "async": false,
+                    "params": [
+                      {
+                        "type": "Identifier",
+                        "start": 493,
+                        "end": 500,
+                        "loc": {
+                          "start": {
+                            "line": 14,
+                            "column": 37
+                          },
+                          "end": {
+                            "line": 14,
+                            "column": 44
+                          }
+                        },
+                        "name": "resolve"
+                      }
+                    ],
+                    "body": {
+                      "type": "CallExpression",
+                      "start": 504,
+                      "end": 538,
+                      "loc": {
+                        "start": {
+                          "line": 14,
+                          "column": 48
+                        },
+                        "end": {
+                          "line": 14,
+                          "column": 82
+                        }
+                      },
+                      "callee": {
+                        "type": "Identifier",
+                        "start": 504,
+                        "end": 514,
+                        "loc": {
+                          "start": {
+                            "line": 14,
+                            "column": 48
+                          },
+                          "end": {
+                            "line": 14,
+                            "column": 58
+                          }
+                        },
+                        "name": "setTimeout"
+                      },
+                      "arguments": [
+                        {
+                          "type": "ArrowFunctionExpression",
+                          "start": 515,
+                          "end": 530,
+                          "loc": {
+                            "start": {
+                              "line": 14,
+                              "column": 59
+                            },
+                            "end": {
+                              "line": 14,
+                              "column": 74
+                            }
+                          },
+                          "id": null,
+                          "generator": false,
+                          "expression": true,
+                          "async": false,
+                          "params": [],
+                          "body": {
+                            "type": "CallExpression",
+                            "start": 521,
+                            "end": 530,
+                            "loc": {
+                              "start": {
+                                "line": 14,
+                                "column": 65
+                              },
+                              "end": {
+                                "line": 14,
+                                "column": 74
+                              }
+                            },
+                            "callee": {
+                              "type": "Identifier",
+                              "start": 521,
+                              "end": 528,
+                              "loc": {
+                                "start": {
+                                  "line": 14,
+                                  "column": 65
+                                },
+                                "end": {
+                                  "line": 14,
+                                  "column": 72
+                                }
+                              },
+                              "name": "resolve"
+                            },
+                            "arguments": []
+                          }
+                        },
+                        {
+                          "type": "Identifier",
+                          "start": 532,
+                          "end": 537,
+                          "loc": {
+                            "start": {
+                              "line": 14,
+                              "column": 76
+                            },
+                            "end": {
+                              "line": 14,
+                              "column": 81
+                            }
+                          },
+                          "name": "delay"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "leadingComments": null
+          }
+        ],
+        "kind": "const",
+        "leadingComments": [
+          {
+            "type": "Block",
+            "value": "*\n * Sleep function that returns a promise that will be resolved after given delay\n * @param  {Number} delay Delay in milliseconds\n * @return {Promise}      Promise that will be resolved after delay\n * @example <caption>Promises example</caption>\n * doSomeThings()\n * \t.then(() => sleep(100))\n * \t.then(() => doOtherThings());\n * @example <caption>Async/await example</caption>\n * await doSomeThings();\n * await sleep(100);\n * await doOtherThings();\n ",
+            "start": 0,
+            "end": 455,
+            "loc": {
+              "start": {
+                "line": 1,
+                "column": 0
+              },
+              "end": {
+                "line": 13,
+                "column": 3
+              }
+            },
+            "range": [
+              0,
+              455
+            ]
+          }
+        ],
+        "trailingComments": []
+      }
+    }
+  ]
+}
