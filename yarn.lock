@@ -32,14 +32,14 @@ amdefine@>=0.0.4:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/amdefine/-/amdefine-1.0.1.tgz#4a5282ac164729e93619bcfd3ad151f817ce91f5"
 
-amqplib@^0.4.0:
-  version "0.4.2"
-  resolved "https://registry.yarnpkg.com/amqplib/-/amqplib-0.4.2.tgz#5e4a2a914ccb3125f9cb91f6da07c97aa4cb13a6"
+amqplib@^0.5.1:
+  version "0.5.1"
+  resolved "https://registry.yarnpkg.com/amqplib/-/amqplib-0.5.1.tgz#7cccfebabe56c2e984ea7a2243f7cefe6fbfc6cf"
   dependencies:
     bitsyntax "~0.0.4"
+    bluebird "^3.4.6"
     buffer-more-ints "0.0.2"
     readable-stream "1.x >=1.1.9"
-    when "~3.6.2"
 
 ansi-regex@^2.0.0:
   version "2.0.0"
@@ -431,6 +431,12 @@ babel-plugin-transform-es2015-shorthand-properties@6.x:
     babel-runtime "^6.0.0"
     babel-types "^6.18.0"
 
+babel-plugin-transform-es2015-spread@6.x:
+  version "6.8.0"
+  resolved "https://registry.yarnpkg.com/babel-plugin-transform-es2015-spread/-/babel-plugin-transform-es2015-spread-6.8.0.tgz#0217f737e3b821fa5a669f187c6ed59205f05e9c"
+  dependencies:
+    babel-runtime "^6.0.0"
+
 babel-plugin-transform-es2015-sticky-regex@6.x:
   version "6.8.0"
   resolved "https://registry.yarnpkg.com/babel-plugin-transform-es2015-sticky-regex/-/babel-plugin-transform-es2015-sticky-regex-6.8.0.tgz#e73d300a440a35d5c64f5c2a344dc236e3df47be"
@@ -484,17 +490,19 @@ babel-polyfill@^6.16.0:
     core-js "^2.4.0"
     regenerator-runtime "^0.9.5"
 
-babel-preset-es2015-node@^5.0.2:
-  version "5.0.5"
-  resolved "https://registry.yarnpkg.com/babel-preset-es2015-node/-/babel-preset-es2015-node-5.0.5.tgz#a807e3c2947f8adf394a98fc9ea377afc0240fab"
+babel-preset-es2015-node@^6.1.1:
+  version "6.1.1"
+  resolved "https://registry.yarnpkg.com/babel-preset-es2015-node/-/babel-preset-es2015-node-6.1.1.tgz#60b23157024b0cfebf3a63554cb05ee035b4e55f"
   dependencies:
     babel-plugin-transform-es2015-destructuring "6.x"
     babel-plugin-transform-es2015-function-name "6.x"
     babel-plugin-transform-es2015-modules-commonjs "6.x"
     babel-plugin-transform-es2015-parameters "6.x"
     babel-plugin-transform-es2015-shorthand-properties "6.x"
+    babel-plugin-transform-es2015-spread "6.x"
     babel-plugin-transform-es2015-sticky-regex "6.x"
     babel-plugin-transform-es2015-unicode-regex "6.x"
+    semver "5.x"
 
 babel-preset-stage-1@^6.3.13:
   version "6.16.0"
@@ -615,6 +623,10 @@ block-stream@*:
   dependencies:
     inherits "~2.0.0"
 
+bluebird@^3.4.6:
+  version "3.4.6"
+  resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.4.6.tgz#01da8d821d87813d158967e743d5fe6c62cf8c0f"
+
 boolbase@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
@@ -707,10 +719,6 @@ cliui@^2.1.0:
     center-align "^0.1.1"
     right-align "^0.1.1"
     wordwrap "0.0.2"
-
-clone@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/clone/-/clone-1.0.2.tgz#260b7a99ebb1edfe247538175f783243cb19d149"
 
 code-point-at@^1.0.0:
   version "1.1.0"
@@ -1441,16 +1449,15 @@ isstream@0.1.x, isstream@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
 
-istanbul-api@^1.0.0-alpha:
-  version "1.0.0-aplha.10"
-  resolved "https://registry.yarnpkg.com/istanbul-api/-/istanbul-api-1.0.0-aplha.10.tgz#902edf5cf5404e0eba7e00ef46408488a0d3e337"
+istanbul-api@^1.1.0-alpha:
+  version "1.1.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/istanbul-api/-/istanbul-api-1.1.0-alpha.1.tgz#74f1e7ac07285c3d29ad97af22d9c8e337bd0ab4"
   dependencies:
     async "1.x"
-    clone "^1.0.2"
     fileset "0.2.x"
     istanbul-lib-coverage "^1.0.0-alpha"
     istanbul-lib-hook "^1.0.0-alpha"
-    istanbul-lib-instrument "^1.0.0-alpha"
+    istanbul-lib-instrument "^1.1.0-alpha"
     istanbul-lib-report "^1.0.0-alpha"
     istanbul-lib-source-maps "^1.0.0-alpha"
     istanbul-reports "^1.0.0-alpha"
@@ -1468,7 +1475,7 @@ istanbul-lib-hook@^1.0.0-alpha:
   dependencies:
     append-transform "^0.3.0"
 
-istanbul-lib-instrument@^1.0.0-alpha:
+istanbul-lib-instrument@^1.1.0-alpha:
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/istanbul-lib-instrument/-/istanbul-lib-instrument-1.3.0.tgz#19f0a973397454989b98330333063a5b56df0e58"
   dependencies:
@@ -1506,13 +1513,13 @@ istanbul-reports@^1.0.0-alpha:
   dependencies:
     handlebars "^4.0.3"
 
-istanbul@^1.0.0-alpha.2:
-  version "1.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/istanbul/-/istanbul-1.0.0-alpha.2.tgz#06096bc08e98baad744aae46962d8df9fac63d08"
+istanbul@^1.1.0-alpha.1:
+  version "1.1.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/istanbul/-/istanbul-1.1.0-alpha.1.tgz#781795656018a2174c5f60f367ee5d361cb57b77"
   dependencies:
     abbrev "1.0.x"
     async "1.x"
-    istanbul-api "^1.0.0-alpha"
+    istanbul-api "^1.1.0-alpha"
     js-yaml "3.x"
     mkdirp "0.5.x"
     nopt "3.x"
@@ -2084,7 +2091,7 @@ sax@^1.1.4:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/sax/-/sax-1.2.1.tgz#7b8e656190b228e81a66aea748480d828cd2d37a"
 
-semver@^5.3.0, semver@~5.3.0:
+semver@5.x, semver@^5.3.0, semver@~5.3.0:
   version "5.3.0"
   resolved "https://registry.yarnpkg.com/semver/-/semver-5.3.0.tgz#9b2ce5d3de02d17c6012ad326aa6b4d0cf54f94f"
 
@@ -2367,10 +2374,6 @@ whatwg-url-compat@~0.6.5:
   resolved "https://registry.yarnpkg.com/whatwg-url-compat/-/whatwg-url-compat-0.6.5.tgz#00898111af689bb097541cd5a45ca6c8798445bf"
   dependencies:
     tr46 "~0.0.1"
-
-when@~3.6.2:
-  version "3.6.4"
-  resolved "https://registry.yarnpkg.com/when/-/when-3.6.4.tgz#473b517ec159e2b85005497a13983f095412e34e"
 
 which@^1.1.1:
   version "1.2.12"
