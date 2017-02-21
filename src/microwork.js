@@ -26,10 +26,6 @@ class Microwork {
     reconnectTimeout = 5000,
     loggingTransports,
   }) {
-    // init logger
-    this.initLogger(loggingTransports);
-    // log
-    this.logger.debug('construct with', host, exchange);
     /**
      * Service unique ID
      * @type {string}
@@ -79,6 +75,10 @@ class Microwork {
      * @type {Number}
      */
     this.reconnectTimeout = reconnectTimeout;
+    // init logger
+    this.initLogger(loggingTransports);
+    // log
+    this.logger.debug('construct with', host, exchange);
     // init connection
     this.connect().catch(this.tryReconnect.bind(this));
   }
@@ -98,7 +98,11 @@ class Microwork {
       if (process.env.NODE_ENV === 'test') {
         level = 'error';
       }
-      transports.push(new winston.transports.Console({level, label: this.id}));
+      transports.push(new winston.transports.Console({
+        level,
+        colorize: true,
+        label: `service-${this.id.slice(0, 8)}`,
+      }));
     }
     /**
      * Logger
