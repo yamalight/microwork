@@ -1,4 +1,9 @@
 
+0.10.3 / 2017-02-21
+==================
+
+  * Fix logging label assignment & colorize output
+
 0.10.2 / 2017-02-21
 ==================
 
