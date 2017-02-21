@@ -1,4 +1,9 @@
 
+0.10.2 / 2017-02-21
+==================
+
+  * Make default logging less verbouse, use id as label
+
 0.10.1 / 2017-02-21
 ==================
 
