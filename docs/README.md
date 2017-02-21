@@ -4,4 +4,3 @@
 * [Advanced Usage](Advanced.md)
 * [Plugins](Plugins.md)
 * [Change Log](../CHANGELOG.md)
-* [API](http://yamalight.github.io/microwork/)

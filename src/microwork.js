@@ -98,7 +98,7 @@ class Microwork {
       if (process.env.NODE_ENV === 'test') {
         level = 'error';
       }
-      transports.push(new winston.transports.Console({level}));
+      transports.push(new winston.transports.Console({level, label: this.id}));
     }
     /**
      * Logger
@@ -162,7 +162,7 @@ class Microwork {
       return true;
     }
 
-    this.logger.debug('connecting...');
+    this.logger.silly('connecting...');
     // we're connecting
     this.connecting = true;
     // connect
@@ -170,15 +170,16 @@ class Microwork {
     this.logger.debug('connected to rabbit');
     // get two channels - receive and send
     this.channel = await this.connection.createChannel();
-    this.logger.debug('got channels');
+    this.logger.silly('got channels');
     // assing topic
     await this.channel.assertExchange(this.exchange, 'topic');
-    this.logger.debug('got exchanges');
+    this.logger.silly('got exchanges');
     // say we want to prefetch only 1 msg
     await this.channel.prefetch(1);
-    this.logger.debug('prefetch set');
+    this.logger.silly('prefetch set');
     // we're done connecting
     this.connecting = false;
+    return true;
   }
 
   /**
@@ -283,34 +284,34 @@ class Microwork {
   async subscribe(
     topic,
     handler,
-    queueConfig = {},
-    consumeConfig = {},
-    config = {}
+    userQueueConfig = {},
+    userConsumeConfig = {},
+    userConfig = {}
   ) {
     // merge queueConfig with defaults
-    queueConfig = Object.assign({
+    const queueConfig = Object.assign({
       durable: true,
       autoDelete: true,
-    }, queueConfig);
+    }, userQueueConfig);
     // merge consumeConfig with defaults
-    consumeConfig = Object.assign({
+    const consumeConfig = Object.assign({
       noAck: false,
-    }, consumeConfig);
+    }, userConsumeConfig);
     // merge config with defaults
-    config = Object.assign({
+    const config = Object.assign({
       ack: true,
-    }, config);
+    }, userConfig);
     // wait for connection
     await this.connect();
     // get queue
     this.logger.debug('adding worker for:', topic);
     const {queue} = await this.channel.assertQueue(`microwork-${topic}-queue`, queueConfig);
     await this.channel.bindQueue(queue, this.exchange, topic);
-    this.logger.debug('bound queue...');
+    this.logger.silly('bound queue...');
     // consume if needed
-    this.logger.debug('initiating consuming...');
+    this.logger.silly('initiating consuming...');
     // listen for messages
-    const {consumerTag} = await this.channel.consume(queue, data => {
+    const {consumerTag} = await this.channel.consume(queue, (data) => {
       if (!data) {
         return;
       }
