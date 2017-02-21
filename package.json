@@ -1,6 +1,6 @@
 {
   "name": "microwork",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Microwork - simple creation of distributed scalable microservices in node.js with RabbitMQ",
   "main": "src/index.js",
   "scripts": {
