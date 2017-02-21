@@ -4,13 +4,13 @@
  * @return {Promise}      Promise that will be resolved after delay
  * @example <caption>Promises example</caption>
  * doSomeThings()
- * 	.then(() => sleep(100))
- * 	.then(() => doOtherThings());
+ *  .then(() => sleep(100))
+ *  .then(() => doOtherThings());
  * @example <caption>Async/await example</caption>
  * await doSomeThings();
  * await sleep(100);
  * await doOtherThings();
  */
-const sleep = (delay) => new Promise(resolve => setTimeout(() => resolve(), delay));
+const sleep = delay => new Promise(resolve => setTimeout(resolve, delay));
 
-export default sleep;
+module.exports = sleep;

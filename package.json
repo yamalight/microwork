@@ -1,16 +1,15 @@
 {
   "name": "microwork",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Microwork - simple creation of distributed scalable microservices in node.js with RabbitMQ",
-  "main": "lib/index.js",
+  "main": "src/index.js",
   "scripts": {
-    "cover": "babel-node ./node_modules/istanbul/lib/cli cover ./node_modules/tape/bin/tape ./test",
-    "coveralls": "npm run cover && cat ./coverage/lcov.info | coveralls",
-    "prepublish": "babel -d lib src/",
+    "cover-lcov": "NODE_ENV=test tap --node-arg=--harmony-async-await --cov --coverage-report=text-lcov ./test",
+    "cover": "NODE_ENV=test tap --node-arg=--harmony-async-await --cov --coverage-report=lcov ./test",
+    "coveralls": "NODE_ENV=test npm run cover-lcov | coveralls",
     "start-rabbit": "docker run -d -p 5672:5672 -p 8081:15672 --name microwork-rabbit rabbitmq:management",
     "stop-rabbit": "docker stop microwork-rabbit",
-    "docs": "esdoc -c esdoc.json",
-    "test": "NODE_ENV=test tape -r babel-core/register test | tap-spec"
+    "test": "NODE_ENV=test tap --node-arg=--harmony-async-await --reporter=spec ./test"
   },
   "author": "Tim Ermilov <yamalight@gmail.com> (http://codezen.net)",
   "license": "MIT",
@@ -33,19 +32,11 @@
   ],
   "dependencies": {
     "amqplib": "^0.5.1",
-    "uuid": "^3.0.0",
-    "winston": "^2.1.1"
+    "uuid": "^3.0.1",
+    "winston": "^2.3.1"
   },
   "devDependencies": {
-    "babel-cli": "^6.4.5",
-    "babel-core": "^6.4.5",
-    "babel-preset-es2015-node": "^6.1.1",
-    "babel-preset-stage-1": "^6.3.13",
-    "coveralls": "^2.11.6",
-    "esdoc": "^0.4.3",
-    "esdoc-es7-plugin": "0.0.3",
-    "istanbul": "^1.1.0-alpha.1",
-    "tap-spec": "^4.1.1",
-    "tape": "^4.4.0"
+    "coveralls": "^2.11.16",
+    "tap": "^10.2.0"
   }
 }

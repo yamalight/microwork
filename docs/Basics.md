@@ -16,9 +16,9 @@ The can be done using passed `reply` function, like so:
 ```js
 // listen for reply from workers
 await service.subscribe('some.topic', (msg, reply) => {
-    if (msg === 'ping') {
-        reply('reply.topic', 'pong');
-    }
+  if (msg === 'ping') {
+    reply('reply.topic', 'pong');
+  }
 });
 ```
 
@@ -50,7 +50,7 @@ You can pass your custom queue and consume configs to RabbitMQ during subscripti
 Simply pass them as third and forth arguments to subscribe function, like so:
 ```js
 await service.subscribe('some.topic', (msg) => {
-    // ...
+  // ...
 }, queueConfig, consumeConfig);
 ```
 
@@ -66,11 +66,11 @@ To do so, provide subscription config, like so:
 
 ```js
 await service.subscribe('response.topic', (msg, reply, ack, nack) => {
-    if (msg === 'hello world!') {
-        console.log(msg); // -> "hello world!"
-        ack();
-    } else {
-        nack();
-    }
+  if (msg === 'hello world!') {
+    console.log(msg); // -> "hello world!"
+    ack();
+  } else {
+    nack();
+  }
 }, queueConfig, consumeConfig, {ack: false});
 ```

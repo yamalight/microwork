@@ -7,12 +7,12 @@ Example service that adds two different subscribers to the same topic, they will
 // ...
 // add worker to specific topic
 await runner.subscribe('do.work', (msg, reply) => {
-    reply('response.topic', msg + ' world!');
+  reply('response.topic', msg + ' world!');
 });
 // add another worker
 // round-robin will be used to cycle between workers
 await runner.subscribe('do.work', (msg, reply) => {
-    reply('response.topic', msg + ' world! Replies to every other message.');
+  reply('response.topic', msg + ' world! Replies to every other message.');
 });
 ```
 

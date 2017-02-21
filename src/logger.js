@@ -1,3 +1,5 @@
-import winston from 'winston';
+const winston = require('winston');
 
-export default (transports) => new winston.Logger({transports});
+const newLogger = transports => new winston.Logger({transports});
+
+module.exports = newLogger;

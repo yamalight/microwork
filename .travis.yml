@@ -3,8 +3,4 @@ node_js:
   - "stable"
 services:
   - rabbitmq
-after_success: ./gh-deploy.sh && npm run coveralls
-env:
-  global:
-    - GH_REF: github.com/yamalight/microwork.git
-    - secure: GS6uwn9Dt+TtGtyi86xqnyklAyzGaq3GMAxvCQ2vgTMq47q1EC536fPxmSF3jyrnWbE5KSwgGpWmc+V4dMyYdpyP2hhrzNL9WmXtgHUhv5A0KAYml/gSiK+4NU4FNhJLX5t8hXulFUtDvjWsZxKxyXrX2hJHKe1wbSURYdYWy1ND0ZxanvO/JKYHXrF9jyzWsFVfTqESL/1K3YhKkoS3CQ+EhHi0+BVawQSOPrleeNuIXUqvAzR5yU7GI3g0WXDaYTJWnl7BJFquLUVhDd2mfA5LBHO14KDue97+/qF8DXRBE1KwRdfUnpDVSkX11ZBYpSmQPewyIRnx35BcB+IZYh1w60/f+Q1/KA6HjI6xfLfETPBvGmLbJ4/KeTEqV61X1PsFnTG9PJDo9Z3b5n32DddB4t7UmBAh8x39qdiRx2nsYg1kSQa4bizFm6mVRiboPaTxOf3QduJtszK8mzl74Fj6hoAfrBUJt82KVGj8sVUbV2b5DyDqlotf620qOFJwFMcOCrVALgHojYDNykIWwMwb4l+r++PJeDlsFJHVx8QY89D2rG8bU3OBSaErdm7rqP/vMTl4OJCs/e+WCCQeaOKsjrvJaaStXqIyXNiOoyZyqjqzEDu6/Sys1FjtayyHNlA5LHawAOxaRk3lW+ZtEPheH6joVjFf7wNC/yumwD0
+after_success: npm run coveralls

@@ -1,3 +1,3 @@
-import {Microwork} from './microwork';
+const Microwork = require('./microwork');
 
-export default Microwork;
+module.exports = Microwork;
