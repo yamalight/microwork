@@ -9,7 +9,7 @@ Provides basic hardware stats about node (currently includes cpu with average lo
 
 Example usage:
 ```js
-import HardwareStat from 'microwork/lib/plugins/hardwarestat';
+const HardwareStat = require('microwork/lib/plugins/hardwarestat');
 
 // create service
 const service = new Microwork({host: 'docker.dev', exchange});
@@ -47,7 +47,7 @@ Provides basic keep-alive signal from node.
 
 Example usage:
 ```js
-import HealthCheck from 'microwork/lib/plugins/healthcheck';
+const HealthCheck = require('microwork/lib/plugins/healthcheck');
 
 // create service
 const service = new Microwork({host: 'docker.dev', exchange});
@@ -72,7 +72,7 @@ Provides basic info about subscribers from node.
 
 Example usage:
 ```js
-import SubscriberStats from 'microwork/lib/plugins/substats';
+const SubscriberStats = require('microwork/lib/plugins/substats');
 
 // create service
 const service = new Microwork({host: 'docker.dev', exchange});

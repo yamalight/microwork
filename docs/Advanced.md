@@ -24,7 +24,7 @@ Microwork uses [winston](https://github.com/winstonjs/winston) output for loggin
 By default Console logger is used, but it is possible to override logger transport settings.
 You can do that by passing an array of logging transports you wish to use to Microwork constructor, like so:
 ```js
-import winston from 'winston';
+const winston = require('winston');
 
 const loggingTransports = [new winston.transports.Console({level: 'error'})];
 

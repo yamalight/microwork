@@ -30,7 +30,7 @@ Since Microwork.js is written in ES6 and it uses async/await - it requires lates
 
 Example service that subscribe to messages from `do.work` topic and does some work with incoming data (in this case it just appends ` world!` to incoming string):
 ```js
-import Microwork from 'microwork';
+const Microwork = require('microwork');
 
 // create task runner
 const runner = new Microwork({host: 'your.rabbit.host', exchange: 'your.exchange'});
@@ -44,7 +44,7 @@ await runner.stop();
 
 Example service that subscribes to messages from `response.topic` and logs them to console, as well as sends processing request to previously defined service:
 ```js
-import Microwork from 'microwork';
+const Microwork = require('microwork');
 
 // create master
 const master = new Microwork({host: 'your.rabbit.host', exchange: 'your.exchange'});

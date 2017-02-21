@@ -126,7 +126,7 @@ class Microwork {
    * @param  {Object} plugin      Microwork plugin object
    * @return {void}
    * @example
-   * import myMicroworkPlugin from 'my-microwork-plugin';
+   * const myMicroworkPlugin = require('my-microwork-plugin');
    * microworkInstance.registerPlugin(myMicroworkPlugin);
    */
   registerPlugin(plugin) {
