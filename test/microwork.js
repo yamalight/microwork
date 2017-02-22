@@ -9,8 +9,8 @@ tap.test('Microwork', (it) => {
   it.test('  -> should deliver message from one service to another', (t) => {
     const exchange = 'master.to.runner';
     // create master and runner services
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.path';
     const message = {hello: 'world'};
@@ -33,8 +33,8 @@ tap.test('Microwork', (it) => {
   it.test('  -> should get reply for master query from runner', (t) => {
     const exchange = 'master.runner.reply';
     // create master and runner
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.request';
     const message = 'ping';
@@ -69,10 +69,10 @@ tap.test('Microwork', (it) => {
     t.plan(6);
     const exchange = 'master.multi.runners';
     // create master and three runners
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
-    const runnerTwo = new Microwork({host: 'docker.dev', exchange});
-    const runnerThree = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
+    const runnerTwo = new Microwork({host, exchange});
+    const runnerThree = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.request';
     const messages = ['ping', 'ping_two', 'ping_three'];
@@ -116,9 +116,9 @@ tap.test('Microwork', (it) => {
     t.plan(4);
     const exchange = 'master.noack.runners';
     // create master and three runners
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
-    const runnerTwo = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
+    const runnerTwo = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.request';
     const messages = ['ping', 'ping_two'];
@@ -163,8 +163,8 @@ tap.test('Microwork', (it) => {
     t.plan(6);
     const exchange = 'master.multi.subscribers';
     // create master and three runners
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.request';
     const messages = ['ping', 'ping_two', 'ping_three'];
@@ -206,9 +206,9 @@ tap.test('Microwork', (it) => {
     t.plan(8);
     const exchange = 'master.runner.unsubscribe';
     // create master and runner
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
-    const runnerTwo = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
+    const runnerTwo = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.request';
     const message = 'ping';
@@ -259,8 +259,8 @@ tap.test('Microwork', (it) => {
     t.plan(8);
     const exchange = 'master.runner.unsubscribe.tag';
     // create master and runner
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const runner = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
+    const runner = new Microwork({host, exchange});
     // test topic and message
     const topic = 'test.request';
     const message = 'ping';
@@ -311,7 +311,7 @@ tap.test('Microwork', (it) => {
 
   it.test('  -> should try to reconnect to rabbit on fail', (t) => {
     // create worker
-    const master = new Microwork({host: 'docker.dev:1234', reconnectTimeout: 500});
+    const master = new Microwork({host: 'rabbit.dev:1234', reconnectTimeout: 500});
     // override connect function to make sure it's called second time
     master.connect = () => {
       t.ok(true, '# should try to reconnect');
@@ -322,7 +322,7 @@ tap.test('Microwork', (it) => {
 
   it.test('  -> should allow stopping while trying to reconnect to rabbit', (t) => {
     // create worker
-    const master = new Microwork({host: 'docker.dev:1234', reconnectTimeout: 1000});
+    const master = new Microwork({host: 'rabbit.dev:1234', reconnectTimeout: 1000});
     setTimeout(async () => {
       await master.stop();
       t.ok(true, '# should stop connection retries');
@@ -333,8 +333,8 @@ tap.test('Microwork', (it) => {
   it.test('  -> should allow calling send while trying to reconnect to rabbit', (t) => {
     // create worker
     const exchange = 'reconnect.text.exchange';
-    const master = new Microwork({host: 'docker.dev', exchange});
-    const worker = new Microwork({host: 'docker.dev:1234', exchange, reconnectTimeout: 500});
+    const master = new Microwork({host, exchange});
+    const worker = new Microwork({host: 'rabbit.dev:1234', exchange, reconnectTimeout: 500});
     // subscribe to message from master
     const topic = 'test.topic';
     const testMessage = 'hello';
@@ -360,9 +360,9 @@ tap.test('Microwork', (it) => {
     const defaultConsumeConfig = {noAck: false};
     const defaultSubscribeConfig = {ack: true};
     const defaultSendConfig = {persistent: true};
-    const master = new Microwork({host: 'docker.dev', exchange, defaultSendConfig});
+    const master = new Microwork({host, exchange, defaultSendConfig});
     const worker = new Microwork({
-      host: 'docker.dev',
+      host,
       exchange,
       defaultQueueConfig,
       defaultConsumeConfig,
