@@ -1,4 +1,11 @@
 
+0.11.0 / 2017-02-22
+==================
+
+  * Allow overriding default subscribe and send configs
+  * Pass message original metadata to subsriber
+  * Reconnect on socket close error
+
 0.10.3 / 2017-02-21
 ==================
 
