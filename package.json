@@ -4,13 +4,13 @@
   "description": "Microwork - simple creation of distributed scalable microservices in node.js with RabbitMQ",
   "main": "src/index.js",
   "scripts": {
-    "cover-lcov": "NODE_ENV=test tap --node-arg=--harmony-async-await --cov --coverage-report=text-lcov ./test",
-    "cover": "NODE_ENV=test tap --node-arg=--harmony-async-await --cov --coverage-report=lcov ./test",
+    "cover-lcov": "NODE_ENV=test tap --cov --coverage-report=text-lcov ./test",
+    "cover": "NODE_ENV=test tap --cov --coverage-report=lcov ./test",
     "coveralls": "NODE_ENV=test npm run cover-lcov | coveralls",
     "rabbit:start": "docker run -d -p 5672:5672 -p 8081:15672 --name microwork-rabbit rabbitmq:management",
     "rabbit:clean": "docker stop microwork-rabbit && docker rm microwork-rabbit",
     "rabbit:restart": "npm run rabbit:clean && npm run rabbit:start",
-    "test": "NODE_ENV=test tap --node-arg=--harmony-async-await --reporter=spec ./test"
+    "test": "NODE_ENV=test tap --reporter=spec ./test"
   },
   "author": "Tim Ermilov <yamalight@gmail.com> (http://codezen.net)",
   "license": "MIT",

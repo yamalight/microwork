@@ -1,7 +1,9 @@
 const tap = require('tap');
+const amqp = require('amqplib');
 const Microwork = require('../src');
 
 const queueConfig = {exclusive: true};
+const host = 'localhost';
 
 tap.test('Microwork', (it) => {
   it.test('  -> should deliver message from one service to another', (t) => {
@@ -347,6 +349,52 @@ tap.test('Microwork', (it) => {
       worker.send(topic, testMessage);
       // swap out host for real one so that next connect goes through
       worker.host = 'docker.dev';
+    };
+    run();
+  });
+
+  it.test('  -> should use custom subscription and send configs', (t) => {
+    const exchange = 'custom.cfg';
+    const topic = 'test';
+    const defaultQueueConfig = {durable: true, autoDelete: false};
+    const defaultConsumeConfig = {noAck: false};
+    const defaultSubscribeConfig = {ack: true};
+    const defaultSendConfig = {persistent: true};
+    const master = new Microwork({host: 'docker.dev', exchange, defaultSendConfig});
+    const worker = new Microwork({
+      host: 'docker.dev',
+      exchange,
+      defaultQueueConfig,
+      defaultConsumeConfig,
+      defaultSubscribeConfig,
+    });
+
+    const run = async () => {
+      const connection = await amqp.connect(`amqp://${host}`);
+      const channel = await connection.createChannel();
+      channel.on('error', () => {}); // noop on error to stop code from throwing
+      await channel.assertExchange(exchange, 'topic');
+
+      const tag = await worker.subscribe(topic, async (msg, reply, ack, nack, metadata) => {
+        t.equal(metadata.properties.deliveryMode, 2, '# should have correct delivery mode');
+        await worker.unsubscribe(topic, tag);
+        await master.stop();
+        await worker.stop();
+
+        // try to assert queue with default params (should fail)
+        try {
+          await channel.assertQueue(`microwork-${topic}-queue`, master.defaultQueueConfig);
+        } catch (e) {
+          t.ok(e);
+          t.ok(e.message.includes(`PRECONDITION_FAILED - inequivalent arg 'auto_delete' for queue 'microwork-test-queue' in vhost '/': received 'true' but current is 'false'`),
+            '# should have correct error message');
+        }
+
+        await connection.close();
+        t.end();
+      });
+
+      await master.send(topic, 'test');
     };
     run();
   });

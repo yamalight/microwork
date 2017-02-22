@@ -25,6 +25,10 @@ class Microwork {
     exchange = 'microwork.default.exchange',
     reconnectTimeout = 5000,
     loggingTransports,
+    defaultQueueConfig = {durable: true, autoDelete: true},
+    defaultConsumeConfig = {noAck: false},
+    defaultSubscribeConfig = {ack: true},
+    defaultSendConfig = {},
   }) {
     /**
      * Service unique ID
@@ -75,6 +79,27 @@ class Microwork {
      * @type {Number}
      */
     this.reconnectTimeout = reconnectTimeout;
+    /**
+     * Default config for queue creation used during subscription
+     * @type {Object}
+     */
+    this.defaultQueueConfig = defaultQueueConfig;
+    /**
+     * Default config for queue consumption used during subscription
+     * @type {Object}
+     */
+    this.defaultConsumeConfig = defaultConsumeConfig;
+    /**
+     * Default config for subscription
+     * @type {Object}
+     */
+    this.defaultSubscribeConfig = defaultSubscribeConfig;
+    /**
+     * Default config for sending out messages
+     * @type {Object}
+     */
+    this.defaultSendConfig = defaultSendConfig;
+
     // init logger
     this.initLogger(loggingTransports);
     // log
@@ -249,11 +274,12 @@ class Microwork {
    * await microworkInstance.send('test.topic', {json: 'works too'});
    */
   async send(topic, data = '', opts = {}) {
+    const publishOpts = Object.assign(this.defaultSendConfig, opts);
     // wait for connection
     await this.connect();
     // send
     this.logger.debug('sending to', topic, 'data:', data);
-    this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)), opts);
+    this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)), publishOpts);
   }
 
   /**
@@ -294,18 +320,11 @@ class Microwork {
     userConfig = {}
   ) {
     // merge queueConfig with defaults
-    const queueConfig = Object.assign({
-      durable: true,
-      autoDelete: true,
-    }, userQueueConfig);
+    const queueConfig = Object.assign(this.defaultQueueConfig, userQueueConfig);
     // merge consumeConfig with defaults
-    const consumeConfig = Object.assign({
-      noAck: false,
-    }, userConsumeConfig);
+    const consumeConfig = Object.assign(this.defaultConsumeConfig, userConsumeConfig);
     // merge config with defaults
-    const config = Object.assign({
-      ack: true,
-    }, userConfig);
+    const config = Object.assign(this.defaultSubscribeConfig, userConfig);
     // wait for connection
     await this.connect();
     // get queue
