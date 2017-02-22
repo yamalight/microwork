@@ -112,7 +112,8 @@ class Microwork {
   }
 
   tryReconnect(e) {
-    if (e.code === 'ECONNREFUSED' && !this.reconnect) {
+    const reconnectError = e.code === 'ECONNREFUSED' || e.message === 'Socket closed abruptly during opening handshake';
+    if (reconnectError && !this.reconnect) {
       this.logger.info(`Couldn't connect to rabbit, retrying in ${Math.floor(this.reconnectTimeout / 1000)}s...`);
       this.connecting = false;
       this.reconnect = setTimeout(() => {
