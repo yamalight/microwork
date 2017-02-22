@@ -329,7 +329,7 @@ class Microwork {
       const reply = this.send.bind(this);
       const ack = this.channel.ack.bind(this.channel, data);
       const nack = this.channel.nack.bind(this.channel, data);
-      handler(msg, reply, ack, nack);
+      handler(msg, reply, ack, nack, data);
     }, consumeConfig);
     // push to cleanup
     if (!this.routeHandlers[topic]) {

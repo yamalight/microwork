@@ -37,8 +37,14 @@ tap.test('Microwork', (it) => {
     const topic = 'test.request';
     const message = 'ping';
     // test consumer that should receive message
-    const consumer = (msg, reply) => {
+    const consumer = (msg, reply, ack, nack, metadata) => {
+      // validate message
       t.equal(msg, 'ping', '# should get correct incoming message');
+      // validate metadata
+      t.equal(metadata.fields.deliveryTag, 1, '# should have correct deliveryTag');
+      t.equal(metadata.fields.redelivered, false, '# should not be redelivered');
+      t.equal(metadata.fields.exchange, exchange, '# should have correct exchange');
+      t.equal(metadata.fields.routingKey, topic, '# should have correct routingKey');
       reply(`${topic}.response`, 'pong');
     };
     const run = async () => {
