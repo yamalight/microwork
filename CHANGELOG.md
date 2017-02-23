@@ -1,4 +1,9 @@
 
+0.12.0 / 2017-02-23
+==================
+
+  * Only disallow sending to empty topic, allow empty data
+
 0.11.2 / 2017-02-23
 ==================
 
