@@ -1,4 +1,9 @@
 
+0.11.1 / 2017-02-23
+==================
+
+  * Do now allow sending empty data or use empty topic
+
 0.11.0 / 2017-02-22
 ==================
 
