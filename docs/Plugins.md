@@ -96,5 +96,5 @@ await service.subscribe('microwork.node.subscribers', (info) => {
   */
 });
 
-await service.send('microwork.node.report.subscribers');
+await service.send('microwork.node.report.subscribers', 'get');
 ```
