@@ -274,9 +274,14 @@ class Microwork {
    * await microworkInstance.send('test.topic', {json: 'works too'});
    */
   async send(topic, data = '', opts = {}) {
-    const publishOpts = Object.assign(this.defaultSendConfig, opts);
+    // do not allow sending empty data or to empty topic
+    if (!topic || !data) {
+      return;
+    }
     // wait for connection
     await this.connect();
+    // assemble publish options
+    const publishOpts = Object.assign(this.defaultSendConfig, opts);
     // send
     this.logger.debug('sending to', topic, 'data:', data);
     this.channel.publish(this.exchange, topic, new Buffer(JSON.stringify(data)), publishOpts);
