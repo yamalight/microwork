@@ -32,7 +32,7 @@ tap.test('SubscriberStats', (it) => {
       master.initSubscribersReporting();
       // send request with delay
       setTimeout(() => {
-        master.send('microwork.node.report.subscribers', 'get');
+        master.send('microwork.node.report.subscribers');
       }, 100);
     };
     run();

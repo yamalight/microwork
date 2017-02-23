@@ -274,8 +274,8 @@ class Microwork {
    * await microworkInstance.send('test.topic', {json: 'works too'});
    */
   async send(topic, data = '', opts = {}) {
-    // do not allow sending empty data or to empty topic
-    if (!topic || !data) {
+    // do not allow sending to empty topic
+    if (!topic) {
       return;
     }
     // wait for connection
