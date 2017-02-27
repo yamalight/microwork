@@ -46,7 +46,24 @@ await service.unsubscribe('topic.name', tag);
 
 ## Passing queue and consume configs to RabbitMQ
 
-You can pass your custom queue and consume configs to RabbitMQ during subscription.
+You can pass your custom queue and consume configs to RabbitMQ either during Microwork instantiation or during subscription.
+To define configs during instantiation, provide them as additional parameters of config object, e.g.:
+```js
+// define configs
+const queueConfig = {durable: true};
+const sendConfig = {persistent: false};
+const subscribeConfig = {ack: false};
+// pass them to your new microwork service
+const service = new Microwork({
+  host,
+  exchange,
+  reconnectTimeout: 1000,
+  defaultQueueConfig: queueConfig,
+  defaultSendConfig: sendConfig,
+  defaultSubscribeConfig: subscribeConfig,
+});
+```
+
 Simply pass them as third and forth arguments to subscribe function, like so:
 ```js
 await service.subscribe('some.topic', (msg) => {
