@@ -30,3 +30,28 @@ const loggingTransports = [new winston.transports.Console({level: 'error'})];
 
 const runner = new Microwork({loggingTransports});
 ```
+
+## Persistent queues and messaging
+
+By default Microwork queues and messages are non-persistent.
+So, if nobody's listening on other end at the moment of dispatch - messages will just disappear.
+And queues will be desctructed once there are no subscribers, or upon RabbitMQ restart.  
+Sometimes you might want to have persistent queues and messages.
+This can be achieved by providing the following configs during the Microwork service instantiation:
+```js
+// define configs
+const queueConfig = {
+  durable: true, // queue should survive daemon restart
+  autoDelete: false, // queues should not be auto-deleted
+};
+const sendConfig = {
+  persistent: true, // make messages survive daemon restart
+};
+// pass them to your new microwork service
+const service = new Microwork({
+  host,
+  exchange,
+  defaultQueueConfig: queueConfig,
+  defaultSendConfig: sendConfig,
+});
+```
