@@ -1,6 +1,14 @@
 language: node_js
 node_js:
-  - "stable"
+- stable
 services:
-  - rabbitmq
+- rabbitmq
 after_success: npm run coveralls
+deploy:
+  provider: npm
+  email: yamalight@gmail.com
+  api_key:
+    secure: L4CTgVSQBSdqQeqsUnoCTFZwr2ATcWQK7zsMVvEm6xhmbBaYh/mK5CxcwDQNI90J4BZyjV1CkXqrOBPMnPizizeHb57YlCQNvnW54M3JkIBcoqHKYTrYTB6uQMSN68qclM30NyBXgfgg69Jc1qrhkikDh5Y01H03tyElZoA7SSHeEyWMPFtUfUDIRl9FK/mfuZjk7JzO+jwj/Frl1v2qByFYraQDaN3uPcK01yl5VOcDXzGAvAasTlFLwQTip5wCb6zP2A6YPsdJK4OiC/vP2K9EnwbOjd9BJ/QSRYSWIQr+HSpDv5Gkzm7YSQVETFH5Nx/+XGvGYci/C1023V0tMS8UKYiFzp0f73r4QboSPh3eguVuFstR17w57AbFrz6kl60oft6IX/PGiATR/14DMRFubHuGeVY/P0qtNcEZoTwqcQznKVqfkSj62z8VHKLeKrX7vJnfu9srxRuRTYCZ2AO2XlOjIEpLcHHVouxk3gNOnzcxfhNYwkNYUtZacbfIMesPjuJX6otTdm79fIMD48TZCaqTffyds8XBAFVLeWq8FOopZaT8/Yh0F8nARnptFSyV24I989fj+ibNRa8woWcleVvCQmsfggnZamAEiPb2qtjjtbx3xMkq7d3VLbRFc1V8LC3jM0ybFH++zUBIgX1zJmvlPf9Q5apZhkPYHEI=
+  on:
+    tags: true
+    repo: yamalight/microwork
