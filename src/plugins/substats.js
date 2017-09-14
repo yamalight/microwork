@@ -14,11 +14,10 @@ const SubscriberStats = {
    * @return {[type]} [description]
    */
   reportSubscribers() {
-    const subscribers = Object.keys(this.routeHandlers)
-      .map(key => ({
-        topic: key,
-        subscribers: this.routeHandlers[key].length,
-      }));
+    const subscribers = Object.keys(this.routeHandlers).map(key => ({
+      topic: key,
+      subscribers: this.routeHandlers[key].length,
+    }));
     const stat = {
       id: this.id,
       subscribers,

@@ -1,15 +1,38 @@
 {
-  "parser": "babel-eslint",
-  "extends": "airbnb",
+  "extends": [
+    "airbnb",
+    "prettier"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2017,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["prettier"],
+  "env": {
+    "es6": true,
+    "node": true
+  },
   "rules": {
+    "arrow-parens": "off",
     "object-curly-spacing": ["warn", "never"],
-    "func-names": "off",
-    "space-before-function-paren": ["error", "never"],
     "max-len": ["error", 120, 4],
-    "import/prefer-default-export": "off",
-    "react/prefer-es6-class": "off",
-    "react/prop-types": "off",
-    "jsx-a11y/anchor-has-content": ["error"],
-    "no-prototype-builtins": "off"
+    "no-confusing-arrow": "warn",
+    "comma-dangle": ["error", {
+      "arrays": "always-multiline",
+      "objects": "always-multiline",
+      "imports": "always-multiline",
+      "exports": "always-multiline",
+      "functions": "ignore"
+    }],
+    "react/jsx-filename-extension": "off",
+    "prettier/prettier": ["error", {
+      "trailingComma": "es5",
+      "singleQuote": true,
+      "bracketSpacing": false,
+      "printWidth": 120
+    }]
   }
 }

@@ -123,11 +123,13 @@ class Microwork {
       if (process.env.NODE_ENV === 'test') {
         level = 'error';
       }
-      transports.push(new winston.transports.Console({
-        level,
-        colorize: true,
-        label: `service-${this.id.slice(0, 8)}`,
-      }));
+      transports.push(
+        new winston.transports.Console({
+          level,
+          colorize: true,
+          label: `service-${this.id.slice(0, 8)}`,
+        })
+      );
     }
     /**
      * Logger
@@ -160,6 +162,7 @@ class Microwork {
    * microworkInstance.registerPlugin(myMicroworkPlugin);
    */
   registerPlugin(plugin) {
+    /* eslint-disable no-restricted-syntax, no-prototype-builtins */
     for (const prop in plugin) {
       // only apply non-existent properties
       if (!this.hasOwnProperty(prop)) {
@@ -170,6 +173,7 @@ class Microwork {
         this[prop] = plugin[prop];
       }
     }
+    /* eslint-enable no-restricted-syntax, no-prototype-builtins */
   }
 
   /**
@@ -317,13 +321,7 @@ class Microwork {
    *  }
    * }, {}, {}, {ack: false});
    */
-  async subscribe(
-    topic,
-    handler,
-    userQueueConfig = {},
-    userConsumeConfig = {},
-    userConfig = {}
-  ) {
+  async subscribe(topic, handler, userQueueConfig = {}, userConsumeConfig = {}, userConfig = {}) {
     // merge queueConfig with defaults
     const queueConfig = Object.assign(this.defaultQueueConfig, userQueueConfig);
     // merge consumeConfig with defaults
@@ -340,21 +338,25 @@ class Microwork {
     // consume if needed
     this.logger.silly('initiating consuming...');
     // listen for messages
-    const {consumerTag} = await this.channel.consume(queue, (data) => {
-      if (!data) {
-        return;
-      }
-      const msg = JSON.parse(data.content.toString());
-      // ack
-      if (config.ack) {
-        this.channel.ack(data);
-      }
-      // pass to handler
-      const reply = this.send.bind(this);
-      const ack = this.channel.ack.bind(this.channel, data);
-      const nack = this.channel.nack.bind(this.channel, data);
-      handler(msg, reply, ack, nack, data);
-    }, consumeConfig);
+    const {consumerTag} = await this.channel.consume(
+      queue,
+      data => {
+        if (!data) {
+          return;
+        }
+        const msg = JSON.parse(data.content.toString());
+        // ack
+        if (config.ack) {
+          this.channel.ack(data);
+        }
+        // pass to handler
+        const reply = this.send.bind(this);
+        const ack = this.channel.ack.bind(this.channel, data);
+        const nack = this.channel.nack.bind(this.channel, data);
+        handler(msg, reply, ack, nack, data);
+      },
+      consumeConfig
+    );
     // push to cleanup
     if (!this.routeHandlers[topic]) {
       this.routeHandlers[topic] = [];
