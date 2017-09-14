@@ -1,4 +1,13 @@
 
+0.12.1 / 2017-09-14
+==================
+
+  * Setup autodeploy to npm from travis on tags
+  * Update dependencies
+  * Update eslintrc to use prettier, reformat code with prettier
+  * Document persistent queue config in advanced docs
+  * Document per-service queue and message configs
+
 0.12.0 / 2017-02-23
 ==================
 
