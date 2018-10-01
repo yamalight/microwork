@@ -2,12 +2,14 @@ const tap = require('tap');
 const Microwork = require('../../src');
 const HardwareStat = require('../../src/plugins/hardwarestat');
 
-tap.test('HardwareStat', (it) => {
-  it.test('  -> should report every 500ms', (t) => {
+const host = 'localhost';
+
+tap.test('HardwareStat', it => {
+  it.test('  -> should report every 500ms', t => {
     t.plan(4);
     const exchange = 'master.hardware.autoreport';
     // create service
-    const master = new Microwork({host: 'docker.dev', exchange});
+    const master = new Microwork({host, exchange});
     // register plugin
     master.registerPlugin(HardwareStat);
     // set report interval to 500 for testing
@@ -16,7 +18,7 @@ tap.test('HardwareStat', (it) => {
     const run = async () => {
       // subscribe
       let index = 2;
-      await master.subscribe('microwork.node.status', async (stats) => {
+      await master.subscribe('microwork.node.status', async stats => {
         // validate object
         t.ok(stats.hasOwnProperty('cpu'), '# should have cpu stats');
         t.ok(stats.hasOwnProperty('mem'), '# should have mem stats');
