@@ -3,6 +3,7 @@
 ## Using multiple subscribers to distribute tasks
 
 Example service that adds two different subscribers to the same topic, they will be rotated by RabbitMQ using round-robin strategy (see [RabbitMQ tutorial 2](https://www.rabbitmq.com/tutorials/tutorial-two-javascript.html)):
+
 ```js
 // ...
 // add worker to specific topic
@@ -23,6 +24,7 @@ You can do achieve the same result by instantiating two different services (e.g.
 Microwork uses [winston](https://github.com/winstonjs/winston) output for logging.
 By default Console logger is used, but it is possible to override logger transport settings.
 You can do that by passing an array of logging transports you wish to use to Microwork constructor, like so:
+
 ```js
 const winston = require('winston');
 
@@ -38,6 +40,7 @@ So, if nobody's listening on other end at the moment of dispatch - messages will
 And queues will be desctructed once there are no subscribers, or upon RabbitMQ restart.  
 Sometimes you might want to have persistent queues and messages.
 This can be achieved by providing the following configs during the Microwork service instantiation:
+
 ```js
 // define configs
 const queueConfig = {

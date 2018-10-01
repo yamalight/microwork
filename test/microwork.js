@@ -5,8 +5,8 @@ const Microwork = require('../src');
 const queueConfig = {exclusive: true};
 const host = 'localhost';
 
-tap.test('Microwork', (it) => {
-  it.test('  -> should deliver message from one service to another', (t) => {
+tap.test('Microwork', it => {
+  it.test('  -> should deliver message from one service to another', t => {
     const exchange = 'master.to.runner';
     // create master and runner services
     const master = new Microwork({host, exchange});
@@ -15,7 +15,7 @@ tap.test('Microwork', (it) => {
     const topic = 'test.path';
     const message = {hello: 'world'};
     // test consumer that should receive message
-    const consumer = async (msg) => {
+    const consumer = async msg => {
       t.deepEqual(message, msg, '# should get correct incoming object');
       await master.stop();
       await runner.stop();
@@ -30,7 +30,7 @@ tap.test('Microwork', (it) => {
     sendMessages();
   });
 
-  it.test('  -> should get reply for master query from runner', (t) => {
+  it.test('  -> should get reply for master query from runner', t => {
     const exchange = 'master.runner.reply';
     // create master and runner
     const master = new Microwork({host, exchange});
@@ -51,12 +51,16 @@ tap.test('Microwork', (it) => {
     };
     const run = async () => {
       // subscribe for reply
-      await master.subscribe(`${topic}.response`, async (msg) => {
-        t.equal(msg, 'pong', '# should get correct reply');
-        await master.stop();
-        await runner.stop();
-        t.end();
-      }, queueConfig);
+      await master.subscribe(
+        `${topic}.response`,
+        async msg => {
+          t.equal(msg, 'pong', '# should get correct reply');
+          await master.stop();
+          await runner.stop();
+          t.end();
+        },
+        queueConfig
+      );
       // subscribe for request
       await runner.subscribe(topic, consumer);
       // send message
@@ -65,7 +69,7 @@ tap.test('Microwork', (it) => {
     run();
   });
 
-  it.test('  -> should use round-robin to distribute tasks between three runners', (t) => {
+  it.test('  -> should use round-robin to distribute tasks between three runners', t => {
     t.plan(6);
     const exchange = 'master.multi.runners';
     // create master and three runners
@@ -85,20 +89,24 @@ tap.test('Microwork', (it) => {
     };
     const run = async () => {
       // subscribe for reply
-      await master.subscribe(`${topic}.response`, async (msg) => {
-        // check
-        const index = repliesCheck.indexOf(msg);
-        t.notEqual(index, -1, '# should get correct reply');
-        // remove from array
-        repliesCheck.splice(index, 1);
-        // cleanup after last msg
-        if (repliesCheck.length === 0) {
-          await master.stop();
-          await runner.stop();
-          await runnerTwo.stop();
-          await runnerThree.stop();
-        }
-      }, queueConfig);
+      await master.subscribe(
+        `${topic}.response`,
+        async msg => {
+          // check
+          const index = repliesCheck.indexOf(msg);
+          t.notEqual(index, -1, '# should get correct reply');
+          // remove from array
+          repliesCheck.splice(index, 1);
+          // cleanup after last msg
+          if (repliesCheck.length === 0) {
+            await master.stop();
+            await runner.stop();
+            await runnerTwo.stop();
+            await runnerThree.stop();
+          }
+        },
+        queueConfig
+      );
 
       // add subscriptions for consumers
       await runner.subscribe(topic, consumer.bind(null, 0));
@@ -112,7 +120,7 @@ tap.test('Microwork', (it) => {
     run();
   });
 
-  it.test('  -> should not auto-ack messages', (t) => {
+  it.test('  -> should not auto-ack messages', t => {
     t.plan(4);
     const exchange = 'master.noack.runners';
     // create master and three runners
@@ -135,19 +143,23 @@ tap.test('Microwork', (it) => {
     const rejecter = (msg, reply, ack, nack) => nack();
     const run = async () => {
       // subscribe for reply
-      await master.subscribe(`${topic}.response`, async (msg) => {
-        // check
-        const index = repliesCheck.indexOf(msg);
-        t.notEqual(index, -1, '# should get correct reply');
-        // remove from array
-        repliesCheck.splice(index, 1);
-        // cleanup after last msg
-        if (repliesCheck.length === 0) {
-          await master.stop();
-          await runner.stop();
-          await runnerTwo.stop();
-        }
-      }, queueConfig);
+      await master.subscribe(
+        `${topic}.response`,
+        async msg => {
+          // check
+          const index = repliesCheck.indexOf(msg);
+          t.notEqual(index, -1, '# should get correct reply');
+          // remove from array
+          repliesCheck.splice(index, 1);
+          // cleanup after last msg
+          if (repliesCheck.length === 0) {
+            await master.stop();
+            await runner.stop();
+            await runnerTwo.stop();
+          }
+        },
+        queueConfig
+      );
 
       // add subscriptions for consumers
       await runner.subscribe(topic, consumer, {}, {}, {ack: false});
@@ -159,7 +171,7 @@ tap.test('Microwork', (it) => {
     run();
   });
 
-  it.test('  -> should use round-robin to distribute tasks between three subscribers', (t) => {
+  it.test('  -> should use round-robin to distribute tasks between three subscribers', t => {
     t.plan(6);
     const exchange = 'master.multi.subscribers';
     // create master and three runners
@@ -177,18 +189,22 @@ tap.test('Microwork', (it) => {
     };
     const run = async () => {
       // subscribe for reply
-      await master.subscribe(`${topic}.response`, async (msg) => {
-        // check
-        const index = repliesCheck.indexOf(msg);
-        t.notEqual(index, -1, '# should get correct reply');
-        // remove from array
-        repliesCheck.splice(index, 1);
-        // cleanup after last msg
-        if (repliesCheck.length === 0) {
-          await master.stop();
-          await runner.stop();
-        }
-      }, queueConfig);
+      await master.subscribe(
+        `${topic}.response`,
+        async msg => {
+          // check
+          const index = repliesCheck.indexOf(msg);
+          t.notEqual(index, -1, '# should get correct reply');
+          // remove from array
+          repliesCheck.splice(index, 1);
+          // cleanup after last msg
+          if (repliesCheck.length === 0) {
+            await master.stop();
+            await runner.stop();
+          }
+        },
+        queueConfig
+      );
 
       // add subscriptions for consumers
       await runner.subscribe(topic, consumer.bind(null, 0));
@@ -202,7 +218,7 @@ tap.test('Microwork', (it) => {
     run();
   });
 
-  it.test('  -> should unsubscribe correctly', (t) => {
+  it.test('  -> should unsubscribe correctly', t => {
     t.plan(8);
     const exchange = 'master.runner.unsubscribe';
     // create master and runner
@@ -225,26 +241,30 @@ tap.test('Microwork', (it) => {
     };
     const run = async () => {
       // subscribe for reply
-      await master.subscribe(`${topic}.response`, async (msg) => {
-        t.notEqual(replies.indexOf(msg), -1, '# should get correct reply');
-        repliesCount -= 1;
-        if (msg === 'pong2') {
-          // unsubscribe second runner
-          await runnerTwo.unsubscribe(topic);
-          // remove second answer
-          replies.splice(1, 1);
-          // send two more messages
-          await master.send(topic, message);
-          await master.send(topic, message);
-          return;
-        }
-        if (repliesCount === 0) {
-          await master.stop();
-          await runner.stop();
-          await runnerTwo.stop();
-          t.end();
-        }
-      }, queueConfig);
+      await master.subscribe(
+        `${topic}.response`,
+        async msg => {
+          t.notEqual(replies.indexOf(msg), -1, '# should get correct reply');
+          repliesCount -= 1;
+          if (msg === 'pong2') {
+            // unsubscribe second runner
+            await runnerTwo.unsubscribe(topic);
+            // remove second answer
+            replies.splice(1, 1);
+            // send two more messages
+            await master.send(topic, message);
+            await master.send(topic, message);
+            return;
+          }
+          if (repliesCount === 0) {
+            await master.stop();
+            await runner.stop();
+            await runnerTwo.stop();
+            t.end();
+          }
+        },
+        queueConfig
+      );
       // subscribe for requests
       await runner.subscribe(topic, consumer);
       await runnerTwo.subscribe(topic, consumerTwo);
@@ -255,7 +275,7 @@ tap.test('Microwork', (it) => {
     run();
   });
 
-  it.test('  -> should unsubscribe correctly using consumerTag', (t) => {
+  it.test('  -> should unsubscribe correctly using consumerTag', t => {
     t.plan(8);
     const exchange = 'master.runner.unsubscribe.tag';
     // create master and runner
@@ -279,25 +299,29 @@ tap.test('Microwork', (it) => {
     };
     const run = async () => {
       // subscribe for reply
-      await master.subscribe(`${topic}.response`, async (msg) => {
-        t.notEqual(replies.indexOf(msg), -1, '# should get correct reply');
-        repliesCount -= 1;
-        if (msg === 'pong2') {
-          // unsubscribe second consumer using tag
-          await runner.unsubscribe(topic, tag);
-          // remove second answer
-          replies.splice(1, 1);
-          // send two more messages
-          await master.send(topic, message);
-          await master.send(topic, message);
-          return;
-        }
-        if (repliesCount === 0) {
-          await master.stop();
-          await runner.stop();
-          t.end();
-        }
-      }, queueConfig);
+      await master.subscribe(
+        `${topic}.response`,
+        async msg => {
+          t.notEqual(replies.indexOf(msg), -1, '# should get correct reply');
+          repliesCount -= 1;
+          if (msg === 'pong2') {
+            // unsubscribe second consumer using tag
+            await runner.unsubscribe(topic, tag);
+            // remove second answer
+            replies.splice(1, 1);
+            // send two more messages
+            await master.send(topic, message);
+            await master.send(topic, message);
+            return;
+          }
+          if (repliesCount === 0) {
+            await master.stop();
+            await runner.stop();
+            t.end();
+          }
+        },
+        queueConfig
+      );
       // subscribe for requests
       await runner.subscribe(topic, consumer);
       // subscribe with second consumer and save tag
@@ -309,9 +333,9 @@ tap.test('Microwork', (it) => {
     run();
   });
 
-  it.test('  -> should try to reconnect to rabbit on fail', (t) => {
+  it.test('  -> should try to reconnect to rabbit on fail', t => {
     // create worker
-    const master = new Microwork({host: 'rabbit.dev:1234', reconnectTimeout: 500});
+    const master = new Microwork({host: `${host}:1234`, reconnectTimeout: 500});
     // override connect function to make sure it's called second time
     master.connect = () => {
       t.ok(true, '# should try to reconnect');
@@ -320,9 +344,9 @@ tap.test('Microwork', (it) => {
     };
   });
 
-  it.test('  -> should allow stopping while trying to reconnect to rabbit', (t) => {
+  it.test('  -> should allow stopping while trying to reconnect to rabbit', t => {
     // create worker
-    const master = new Microwork({host: 'rabbit.dev:1234', reconnectTimeout: 1000});
+    const master = new Microwork({host: `${host}:1234`, reconnectTimeout: 1000});
     setTimeout(async () => {
       await master.stop();
       t.ok(true, '# should stop connection retries');
@@ -330,16 +354,16 @@ tap.test('Microwork', (it) => {
     }, 100);
   });
 
-  it.test('  -> should allow calling send while trying to reconnect to rabbit', (t) => {
+  it.test('  -> should allow calling send while trying to reconnect to rabbit', t => {
     // create worker
     const exchange = 'reconnect.text.exchange';
     const master = new Microwork({host, exchange});
-    const worker = new Microwork({host: 'rabbit.dev:1234', exchange, reconnectTimeout: 500});
+    const worker = new Microwork({host: `${host}:1234`, exchange, reconnectTimeout: 500});
     // subscribe to message from master
     const topic = 'test.topic';
     const testMessage = 'hello';
     const run = async () => {
-      await master.subscribe(topic, async (msg) => {
+      await master.subscribe(topic, async msg => {
         t.equal(msg, testMessage, '# should receive test message');
         t.end();
         await master.stop();
@@ -348,12 +372,12 @@ tap.test('Microwork', (it) => {
       // say we want to post message
       worker.send(topic, testMessage);
       // swap out host for real one so that next connect goes through
-      worker.host = 'docker.dev';
+      worker.host = host;
     };
     run();
   });
 
-  it.test('  -> should use custom subscription and send configs', (t) => {
+  it.test('  -> should use custom subscription and send configs', t => {
     const exchange = 'custom.cfg';
     const topic = 'test';
     const defaultQueueConfig = {durable: true, autoDelete: false};
@@ -386,8 +410,12 @@ tap.test('Microwork', (it) => {
           await channel.assertQueue(`microwork-${topic}-queue`, master.defaultQueueConfig);
         } catch (e) {
           t.ok(e);
-          t.ok(e.message.includes(`PRECONDITION_FAILED - inequivalent arg 'auto_delete' for queue 'microwork-test-queue' in vhost '/': received 'true' but current is 'false'`),
-            '# should have correct error message');
+          t.ok(
+            e.message.includes(
+              `PRECONDITION_FAILED - inequivalent arg 'auto_delete' for queue 'microwork-test-queue' in vhost '/': received 'true' but current is 'false'`
+            ),
+            '# should have correct error message'
+          );
         }
 
         await connection.close();
